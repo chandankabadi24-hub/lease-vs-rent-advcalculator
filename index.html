@@ -559,10 +559,10 @@ canvas {
 <!-- Header -->
 <header class="header">
   <div class="header-content">
-    <div class="logo"> Aladdin Finance</div>
+    <div class="logo">💰 Aladdin Finance</div>
     <div class="header-actions">
       <button class="btn-theme" onclick="toggleTheme()">
-        <span id="theme-icon"></span>
+        <span id="theme-icon">🌙</span>
         <span id="theme-text">Dark</span>
       </button>
     </div>
@@ -684,17 +684,17 @@ canvas {
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-label">Monthly Savings</div>
-        <div class="metric-value" id="mSave">0</div>
+        <div class="metric-value" id="mSave">₹0</div>
         <div class="metric-change" id="mSaveChange"></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Yearly Savings</div>
-        <div class="metric-value" id="ySave">0</div>
+        <div class="metric-value" id="ySave">₹0</div>
         <div class="metric-change" id="ySaveChange"></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Total Lease Savings</div>
-        <div class="metric-value" id="tSave">0</div>
+        <div class="metric-value" id="tSave">₹0</div>
         <div class="metric-change" id="tSaveChange"></div>
       </div>
       <div class="metric-card">
@@ -760,11 +760,14 @@ canvas {
 
 <script>
 
+// Register ChartDataLabels plugin FIRST - CRITICAL!
+Chart.register(window['ChartDataLabels']);
+
 // Theme Toggle
 function toggleTheme() {
   document.body.classList.toggle('light');
   const isDark = !document.body.classList.contains('light');
-  document.getElementById('theme-icon').textContent = isDark ? '' : '';
+  document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
   document.getElementById('theme-text').textContent = isDark ? 'Dark' : 'Light';
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
   if (waterfallChart && forwardRentChart && breakEvenChart) {
@@ -775,7 +778,7 @@ function toggleTheme() {
 // Load saved theme
 if (localStorage.getItem('theme') === 'light') {
   document.body.classList.add('light');
-  document.getElementById('theme-icon').textContent = '';
+  document.getElementById('theme-icon').textContent = '☀️';
   document.getElementById('theme-text').textContent = 'Light';
 }
 
@@ -791,7 +794,7 @@ function num(id) {
 }
 
 function formatCurrency(n) {
-  return '' + Math.round(n || 0).toLocaleString('en-IN');
+  return '₹' + Math.round(n || 0).toLocaleString('en-IN');
 }
 
 // Color System
@@ -811,6 +814,7 @@ function getChartColor(inflation, liquidity) {
 
 // Chart Instances
 let waterfallChart, forwardRentChart, breakEvenChart;
+let updateChartColors; // Declare in outer scope
 
 // EMI Calculator
 function emi(P, r, n) {
@@ -888,16 +892,16 @@ function calculate() {
   // Score Interpretation
   let interpretation = 'Analyzing...';
   if (score >= 75) {
-    interpretation = ' Strong Lease Advantage - Leasing is highly favorable';
+    interpretation = '✅ Strong Lease Advantage - Leasing is highly favorable';
     $('scoreChange').className = 'metric-change text-success';
   } else if (score >= 50) {
-    interpretation = ' Moderate Lease Advantage - Consider leasing';
+    interpretation = '📊 Moderate Lease Advantage - Consider leasing';
     $('scoreChange').className = 'metric-change text-warning';
   } else if (score >= 25) {
-    interpretation = ' Slight Lease Advantage - Evaluate carefully';
+    interpretation = '⚠️ Slight Lease Advantage - Evaluate carefully';
     $('scoreChange').className = 'metric-change text-warning';
   } else {
-    interpretation = ' Recommend Buying - Leasing is less favorable';
+    interpretation = '❌ Recommend Buying - Leasing is less favorable';
     $('scoreChange').className = 'metric-change text-danger';
   }
   $('scoreInterpretation').innerText = interpretation;
@@ -911,62 +915,71 @@ function calculate() {
   $('ySave').innerText = formatCurrency(yearlySavings);
   $('tSave').innerText = formatCurrency(termSavings);
 
-  // Chart Colors
+  // Define Chart Colors Update Function
   updateChartColors = () => {
-    if (waterfallChart) {
-      waterfallChart.data.datasets[0].backgroundColor = chartColor;
-      waterfallChart.options.plugins.datalabels.color = getComputedStyle(document.body).getPropertyValue('--text-primary');
-      waterfallChart.update();
-    }
-    if (forwardRentChart) {
-      forwardRentChart.data.datasets[0].borderColor = chartColor;
-      forwardRentChart.update();
-    }
-    if (breakEvenChart) {
-      breakEvenChart.data.datasets[0].borderColor = chartColor;
-      breakEvenChart.update();
+    try {
+      if (waterfallChart) {
+        waterfallChart.data.datasets[0].backgroundColor = chartColor;
+        waterfallChart.options.plugins.datalabels.color = getComputedStyle(document.body).getPropertyValue('--text-primary');
+        waterfallChart.update();
+      }
+      if (forwardRentChart) {
+        forwardRentChart.data.datasets[0].borderColor = chartColor;
+        forwardRentChart.data.datasets[0].backgroundColor = chartColor + '15';
+        forwardRentChart.update();
+      }
+      if (breakEvenChart) {
+        breakEvenChart.data.datasets[0].borderColor = chartColor;
+        breakEvenChart.data.datasets[0].backgroundColor = chartColor + '15';
+        breakEvenChart.update();
+      }
+    } catch (e) {
+      console.error('Chart update error:', e);
     }
   };
 
   // Waterfall Chart
   if (!waterfallChart) {
-    const ctx = $('waterfallChart').getContext('2d');
-    waterfallChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Interest Cost', 'Opp Cost', 'EMI Opp', 'Delay Cost', 'Total Economic'],
-        datasets: [{
-          data: [totalInterest, ownOpp, emiOpp, delayCost, totalEconomic],
-          backgroundColor: chartColor,
-          borderRadius: 8,
-          borderSkipped: false,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          datalabels: {
-            display: true,
-            color: getComputedStyle(document.body).getPropertyValue('--text-primary'),
-            anchor: 'end',
-            align: 'top',
-            font: { weight: 'bold', size: 11 },
-            formatter: (v) => formatCurrency(v)
-          }
+    try {
+      const ctx = $('waterfallChart').getContext('2d');
+      waterfallChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Interest Cost', 'Opp Cost', 'EMI Opp', 'Delay Cost', 'Total Economic'],
+          datasets: [{
+            data: [totalInterest, ownOpp, emiOpp, delayCost, totalEconomic],
+            backgroundColor: chartColor,
+            borderRadius: 8,
+            borderSkipped: false,
+          }]
         },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { callback: (v) => formatCurrency(v), color: '#94a3b8' },
-            grid: { color: 'rgba(0,0,0,0.1)' }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              display: true,
+              color: getComputedStyle(document.body).getPropertyValue('--text-primary'),
+              anchor: 'end',
+              align: 'top',
+              font: { weight: 'bold', size: 11 },
+              formatter: (v) => formatCurrency(v)
+            }
           },
-          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: (v) => formatCurrency(v), color: '#94a3b8' },
+              grid: { color: 'rgba(0,0,0,0.1)' }
+            },
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          }
         }
-      }
-    });
-    Chart.register(window['ChartDataLabels']);
+      });
+    } catch (e) {
+      console.error('Waterfall chart error:', e);
+    }
   } else {
     waterfallChart.data.datasets[0].data = [totalInterest, ownOpp, emiOpp, delayCost, totalEconomic];
     waterfallChart.data.datasets[0].backgroundColor = chartColor;
@@ -982,35 +995,40 @@ function calculate() {
   }
 
   if (!forwardRentChart) {
-    forwardRentChart = new Chart($('forwardRentChart'), {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: rentSeries,
-          borderColor: chartColor,
-          backgroundColor: chartColor + '15',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          pointBackgroundColor: chartColor,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: {
-            ticks: { callback: (v) => formatCurrency(v), color: '#94a3b8' },
-            grid: { color: 'rgba(0,0,0,0.1)' }
-          },
-          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+    try {
+      const ctx = $('forwardRentChart').getContext('2d');
+      forwardRentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: rentSeries,
+            borderColor: chartColor,
+            backgroundColor: chartColor + '15',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: chartColor,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              ticks: { callback: (v) => formatCurrency(v), color: '#94a3b8' },
+              grid: { color: 'rgba(0,0,0,0.1)' }
+            },
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    } catch (e) {
+      console.error('Forward Rent chart error:', e);
+    }
   } else {
     forwardRentChart.data.labels = labels;
     forwardRentChart.data.datasets[0].data = rentSeries;
@@ -1028,35 +1046,40 @@ function calculate() {
   }
 
   if (!breakEvenChart) {
-    breakEvenChart = new Chart($('breakEvenChart'), {
-      type: 'line',
-      data: {
-        labels: riskAxis,
-        datasets: [{
-          data: savingsAxis,
-          borderColor: chartColor,
-          backgroundColor: chartColor + '15',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          pointBackgroundColor: chartColor,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: {
-            ticks: { callback: (v) => formatCurrency(v), color: '#94a3b8' },
-            grid: { color: 'rgba(0,0,0,0.1)' }
-          },
-          x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+    try {
+      const ctx = $('breakEvenChart').getContext('2d');
+      breakEvenChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: riskAxis,
+          datasets: [{
+            data: savingsAxis,
+            borderColor: chartColor,
+            backgroundColor: chartColor + '15',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: chartColor,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              ticks: { callback: (v) => formatCurrency(v), color: '#94a3b8' },
+              grid: { color: 'rgba(0,0,0,0.1)' }
+            },
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    } catch (e) {
+      console.error('Break-Even chart error:', e);
+    }
   } else {
     breakEvenChart.data.labels = riskAxis;
     breakEvenChart.data.datasets[0].data = savingsAxis;
