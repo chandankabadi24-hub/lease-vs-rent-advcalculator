@@ -37,6 +37,7 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body.light {
@@ -209,7 +210,6 @@ body::before {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Collapsible sections */
 .collapsible-section {
   border: 1px solid rgba(0,217,255,0.1);
   border-radius: var(--radius-lg);
@@ -228,13 +228,17 @@ body::before {
   color: var(--text-secondary);
   user-select: none;
   transition: var(--transition);
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
 }
 
 .collapsible-header:hover {
   background: rgba(0,217,255,0.1);
 }
 
-.collapsible-header:focus-within {
+.collapsible-header:focus {
   outline: 2px solid var(--accent-primary);
   outline-offset: -1px;
 }
@@ -246,6 +250,8 @@ body::before {
   align-items: center;
   justify-content: center;
   transition: var(--transition);
+  flex-shrink: 0;
+  font-size: 14px;
 }
 
 .collapsible-section.open .collapsible-toggle {
@@ -260,6 +266,18 @@ body::before {
 
 .collapsible-section.open .collapsible-content {
   display: block;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .form-grid {
@@ -306,12 +324,16 @@ body::before {
   transition: var(--transition);
 }
 
-.tooltip-icon:hover {
+.tooltip-icon:hover,
+.tooltip-icon:focus {
   background: rgba(0,217,255,0.5);
   transform: scale(1.1);
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
-.tooltip-icon:hover::after {
+.tooltip-icon:hover::after,
+.tooltip-icon:focus::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: 120%;
@@ -354,30 +376,68 @@ body::before {
   cursor: not-allowed;
 }
 
+.slider-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+  height: 32px;
+}
+
 input[type="range"] {
   width: 100%;
-  height: 8px;
+  height: 6px;
   border-radius: 4px;
-  background: var(--surface-tertiary);
+  background: transparent;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
-  cursor: pointer;
-  accent-color: var(--accent-primary);
-  touch-action: none;
-  display: block;
+  cursor: default;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  z-index: 5;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  background: var(--surface-tertiary);
+  border-radius: 4px;
+  border: none;
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--surface-tertiary);
+  border: none;
+  border-radius: 4px;
+  height: 6px;
+}
+
+input[type="range"]::-moz-range-progress {
+  background: transparent;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 24px;
-  height: 24px;
+  appearance: none;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   cursor: grab;
-  box-shadow: 0 0 12px rgba(0,217,255,0.4), 0 2px 8px rgba(0,0,0,0.3);
-  transition: var(--transition);
   border: 2px solid var(--surface-secondary);
+  box-shadow: 0 0 12px rgba(0,217,255,0.4), 0 2px 8px rgba(0,0,0,0.3);
+  transition: var(--transition-fast);
+  pointer-events: auto;
+  margin-top: -8px;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  width: 26px;
+  height: 26px;
+  box-shadow: 0 0 20px rgba(0,217,255,0.6), 0 2px 8px rgba(0,0,0,0.3);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
@@ -387,21 +447,23 @@ input[type="range"]::-webkit-slider-thumb:active {
   box-shadow: 0 0 24px rgba(0,217,255,0.6), 0 4px 12px rgba(0,0,0,0.4);
 }
 
-input[type="range"]::-webkit-slider-thumb:hover:not(:active) {
-  width: 26px;
-  height: 26px;
-  box-shadow: 0 0 20px rgba(0,217,255,0.6), 0 2px 8px rgba(0,0,0,0.3);
-}
-
 input[type="range"]::-moz-range-thumb {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   cursor: grab;
   border: 2px solid var(--surface-secondary);
   box-shadow: 0 0 12px rgba(0,217,255,0.4), 0 2px 8px rgba(0,0,0,0.3);
-  transition: var(--transition);
+  transition: var(--transition-fast);
+  pointer-events: auto;
+  margin-top: -8px;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  width: 26px;
+  height: 26px;
+  box-shadow: 0 0 20px rgba(0,217,255,0.6), 0 2px 8px rgba(0,0,0,0.3);
 }
 
 input[type="range"]::-moz-range-thumb:active {
@@ -409,12 +471,6 @@ input[type="range"]::-moz-range-thumb:active {
   width: 28px;
   height: 28px;
   box-shadow: 0 0 24px rgba(0,217,255,0.6), 0 4px 12px rgba(0,0,0,0.4);
-}
-
-input[type="range"]::-moz-range-thumb:hover {
-  width: 26px;
-  height: 26px;
-  box-shadow: 0 0 20px rgba(0,217,255,0.6), 0 2px 8px rgba(0,0,0,0.3);
 }
 
 input[type="range"]::-moz-range-track {
@@ -428,6 +484,15 @@ input[type="range"]::-moz-range-track-lower {
 
 input[type="range"]::-moz-range-track-upper {
   background: transparent;
+}
+
+input[type="range"]:focus {
+  outline: none;
+}
+
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 4px;
 }
 
 .form-hint {
@@ -615,6 +680,28 @@ canvas { max-height: 100% !important; }
 .text-warning { color: var(--warning); }
 .text-danger { color: var(--danger); }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.value-update {
+  animation: pulse 0.6s ease;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
 @media (max-width: 1400px) {
   .charts-grid { grid-template-columns: 1fr; }
 }
@@ -629,21 +716,31 @@ canvas { max-height: 100% !important; }
   .form-grid { grid-template-columns: 1fr; gap: 24px; }
   .form-field { gap: 12px; }
   .form-input { padding: 16px 16px; font-size: 16px; }
-  input[type="range"] { height: 12px; margin: 8px 0; }
-  input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; }
-  input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; }
+  .slider-wrapper { padding: 12px 0; height: 36px; }
+  input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -11px; }
+  input[type="range"]::-moz-range-thumb { width: 28px; height: 28px; margin-top: -11px; }
   .section-title { font-size: 22px; }
   .gauge-wrapper { width: 180px; height: 180px; }
   .gauge-inner { width: 150px; height: 150px; font-size: 32px; }
   .chart-container { height: 300px; }
   .collapsible-header { padding: 14px; font-size: 14px; }
   .collapsible-content { padding: 16px 14px; }
-  .tooltip-icon:hover::after { 
+  .tooltip-icon:hover::after,
+  .tooltip-icon:focus::after { 
     font-size: 11px;
     padding: 8px 10px;
     white-space: normal;
     max-width: 200px;
     bottom: 130%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 </style>
@@ -688,43 +785,51 @@ canvas { max-height: 100% !important; }
           <div class="form-field">
             <label class="form-label">
               Lease Amount
-              <span class="tooltip-icon" data-tooltip="Total lease or purchase price">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Total lease or purchase price">?</span>
             </label>
             <input id="leaseAmount" class="form-input" type="text" inputmode="numeric" value="2000000" aria-label="Lease amount in rupees">
-            <input type="range" id="leaseAmountRange" min="100000" max="5000000" step="50000" value="2000000" aria-label="Lease amount slider">
+            <div class="slider-wrapper" role="group" aria-label="Lease amount slider">
+              <input type="range" id="leaseAmountRange" min="100000" max="5000000" step="50000" value="2000000">
+            </div>
             <div class="form-hint">₹ Amount</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Loan Amount
-              <span class="tooltip-icon" data-tooltip="Amount to be financed">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Amount to be financed">?</span>
             </label>
             <input id="loanAmount" class="form-input" type="text" inputmode="numeric" value="1500000" aria-label="Loan amount in rupees">
-            <input type="range" id="loanAmountRange" min="0" max="5000000" step="50000" value="1500000" aria-label="Loan amount slider">
+            <div class="slider-wrapper" role="group" aria-label="Loan amount slider">
+              <input type="range" id="loanAmountRange" min="0" max="5000000" step="50000" value="1500000">
+            </div>
             <div class="form-hint">₹ Amount</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Loan Interest Rate
-              <span class="tooltip-icon" data-tooltip="Annual percentage rate">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Annual percentage rate">?</span>
             </label>
             <input id="loanRate" class="form-input" type="text" inputmode="decimal" value="8.5" aria-label="Loan interest rate percentage">
-            <input type="range" id="loanRateRange" min="1" max="20" step="0.1" value="8.5" aria-label="Loan rate slider">
+            <div class="slider-wrapper" role="group" aria-label="Loan interest rate slider">
+              <input type="range" id="loanRateRange" min="1" max="20" step="0.1" value="8.5">
+            </div>
             <div id="emiLabel" class="form-hint"></div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Monthly Maintenance
-              <span class="tooltip-icon" data-tooltip="Recurring upkeep costs">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Recurring upkeep costs">?</span>
             </label>
             <input id="maintenance" class="form-input" type="text" inputmode="numeric" value="5000" aria-label="Monthly maintenance in rupees">
-            <input type="range" id="maintenanceRange" min="0" max="20000" step="500" value="5000" aria-label="Maintenance slider">
+            <div class="slider-wrapper" role="group" aria-label="Monthly maintenance slider">
+              <input type="range" id="maintenanceRange" min="0" max="20000" step="500" value="5000">
+            </div>
             <div class="form-hint">₹ Per month</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Withholding %
-              <span class="tooltip-icon" data-tooltip="Percentage of deposit held back">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Percentage of deposit held back">?</span>
             </label>
             <input id="withholding" class="form-input" type="text" inputmode="decimal" value="0" aria-label="Withholding percentage">
             <div class="form-hint">% Of lease</div>
@@ -732,7 +837,7 @@ canvas { max-height: 100% !important; }
           <div class="form-field">
             <label class="form-label">
               Refund Delay
-              <span class="tooltip-icon" data-tooltip="Months to recover deposit">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Months to recover deposit">?</span>
             </label>
             <input id="refundDelay" class="form-input" type="text" inputmode="numeric" value="0" aria-label="Refund delay in months">
             <div class="form-hint">Months</div>
@@ -752,37 +857,45 @@ canvas { max-height: 100% !important; }
           <div class="form-field">
             <label class="form-label">
               Market Rent
-              <span class="tooltip-icon" data-tooltip="Current monthly rent">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Current monthly rent">?</span>
             </label>
             <input id="marketRent" class="form-input" type="text" inputmode="numeric" value="45000" aria-label="Monthly market rent in rupees">
-            <input type="range" id="marketRentRange" min="5000" max="200000" step="1000" value="45000" aria-label="Market rent slider">
+            <div class="slider-wrapper" role="group" aria-label="Market rent slider">
+              <input type="range" id="marketRentRange" min="5000" max="200000" step="1000" value="45000">
+            </div>
             <div class="form-hint">₹ Per month</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Rent Deposit
-              <span class="tooltip-icon" data-tooltip="Security deposit required">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Security deposit required">?</span>
             </label>
             <input id="rentDeposit" class="form-input" type="text" inputmode="numeric" value="0" aria-label="Rent deposit in rupees">
-            <input type="range" id="rentDepositRange" min="0" max="500000" step="10000" value="0" aria-label="Rent deposit slider">
+            <div class="slider-wrapper" role="group" aria-label="Rent deposit slider">
+              <input type="range" id="rentDepositRange" min="0" max="500000" step="10000" value="0">
+            </div>
             <div class="form-hint">₹ Amount</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Deposit Refund Delay
-              <span class="tooltip-icon" data-tooltip="Months to get deposit back">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Months to get deposit back">?</span>
             </label>
             <input id="depositRefundDelay" class="form-input" type="text" inputmode="numeric" value="0" aria-label="Deposit refund delay in months">
-            <input type="range" id="depositRefundDelayRange" min="0" max="12" step="1" value="0" aria-label="Deposit refund delay slider">
+            <div class="slider-wrapper" role="group" aria-label="Deposit refund delay slider">
+              <input type="range" id="depositRefundDelayRange" min="0" max="12" step="1" value="0">
+            </div>
             <div class="form-hint">Months</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Rent Increment
-              <span class="tooltip-icon" data-tooltip="Annual rent increase rate">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Annual rent increase rate">?</span>
             </label>
             <input id="rentIncrement" class="form-input" type="text" inputmode="decimal" value="5" aria-label="Annual rent increment percentage">
-            <input type="range" id="rentIncrementRange" min="0" max="10" step="0.5" value="5" aria-label="Rent increment slider">
+            <div class="slider-wrapper" role="group" aria-label="Rent increment slider">
+              <input type="range" id="rentIncrementRange" min="0" max="10" step="0.5" value="5">
+            </div>
             <div class="form-hint">% Per year</div>
           </div>
         </div>
@@ -800,64 +913,78 @@ canvas { max-height: 100% !important; }
           <div class="form-field">
             <label class="form-label">
               Lease Tenure
-              <span class="tooltip-icon" data-tooltip="Duration of the lease">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Duration of the lease">?</span>
             </label>
             <input id="leaseTenure" class="form-input" type="text" inputmode="numeric" value="240" aria-label="Lease tenure in months">
-            <input type="range" id="leaseTenureRange" min="12" max="360" step="12" value="240" aria-label="Lease tenure slider">
+            <div class="slider-wrapper" role="group" aria-label="Lease tenure slider">
+              <input type="range" id="leaseTenureRange" min="12" max="360" step="12" value="240">
+            </div>
             <div class="form-hint">Months</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Loan Tenure
-              <span class="tooltip-icon" data-tooltip="Duration of loan repayment">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Duration of loan repayment">?</span>
             </label>
             <input id="loanTenure" class="form-input" type="text" inputmode="numeric" value="240" aria-label="Loan tenure in months">
-            <input type="range" id="loanTenureRange" min="12" max="360" step="12" value="240" aria-label="Loan tenure slider">
+            <div class="slider-wrapper" role="group" aria-label="Loan tenure slider">
+              <input type="range" id="loanTenureRange" min="12" max="360" step="12" value="240">
+            </div>
             <div class="form-hint">Months</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Opportunity Cost
-              <span class="tooltip-icon" data-tooltip="Return on alternative investment">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Return on alternative investment">?</span>
             </label>
             <input id="oppRate" class="form-input" type="text" inputmode="decimal" value="12" aria-label="Opportunity cost percentage">
-            <input type="range" id="oppRateRange" min="1" max="20" step="0.1" value="12" aria-label="Opportunity cost slider">
+            <div class="slider-wrapper" role="group" aria-label="Opportunity cost slider">
+              <input type="range" id="oppRateRange" min="1" max="20" step="0.1" value="12">
+            </div>
             <div id="oppLabel" class="form-hint"></div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Risk Premium
-              <span class="tooltip-icon" data-tooltip="Extra cost for financial risk">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Extra cost for financial risk">?</span>
             </label>
             <input id="riskPremium" class="form-input" type="text" inputmode="decimal" value="3" aria-label="Risk premium percentage">
-            <input type="range" id="riskPremiumRange" min="0" max="20" step="0.1" value="3" aria-label="Risk premium slider">
+            <div class="slider-wrapper" role="group" aria-label="Risk premium slider">
+              <input type="range" id="riskPremiumRange" min="0" max="20" step="0.1" value="3">
+            </div>
             <div id="riskLabel" class="form-hint"></div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Inflation Rate
-              <span class="tooltip-icon" data-tooltip="General price increase rate">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="General price increase rate">?</span>
             </label>
             <input id="inflationRate" class="form-input" type="text" inputmode="decimal" value="6" aria-label="Inflation rate percentage">
-            <input type="range" id="inflationRateRange" min="0" max="15" step="0.5" value="6" aria-label="Inflation rate slider">
+            <div class="slider-wrapper" role="group" aria-label="Inflation rate slider">
+              <input type="range" id="inflationRateRange" min="0" max="15" step="0.5" value="6">
+            </div>
             <div class="form-hint">% Per year</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Liquidity Premium
-              <span class="tooltip-icon" data-tooltip="Cost of capital being locked">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Cost of capital being locked">?</span>
             </label>
             <input id="liquidityPremium" class="form-input" type="text" inputmode="decimal" value="2" aria-label="Liquidity premium percentage">
-            <input type="range" id="liquidityPremiumRange" min="0" max="10" step="0.5" value="2" aria-label="Liquidity premium slider">
+            <div class="slider-wrapper" role="group" aria-label="Liquidity premium slider">
+              <input type="range" id="liquidityPremiumRange" min="0" max="10" step="0.5" value="2">
+            </div>
             <div class="form-hint">% Per year</div>
           </div>
           <div class="form-field">
             <label class="form-label">
               Return Volatility
-              <span class="tooltip-icon" data-tooltip="Variability of returns">?</span>
+              <span class="tooltip-icon" tabindex="0" data-tooltip="Variability of returns">?</span>
             </label>
             <input id="returnVol" class="form-input" type="text" inputmode="numeric" value="15" aria-label="Return volatility percentage">
-            <input type="range" id="returnVolRange" min="0" max="40" step="1" value="15" aria-label="Return volatility slider">
+            <div class="slider-wrapper" role="group" aria-label="Return volatility slider">
+              <input type="range" id="returnVolRange" min="0" max="40" step="1" value="15">
+            </div>
             <div class="form-hint">% Variance</div>
           </div>
         </div>
@@ -1035,6 +1162,57 @@ function formatCurrency(n) {
   return '₹' + Math.round(n || 0).toLocaleString('en-IN');
 }
 
+// ===================== SLIDER KNOB-ONLY DRAGGING =====================
+document.querySelectorAll('input[type="range"]').forEach(slider => {
+  let lastValue = slider.value;
+  let isDraggingThumb = false;
+  
+  slider.addEventListener('mousedown', (e) => {
+    const rect = slider.getBoundingClientRect();
+    const sliderValue = (slider.value - slider.min) / (slider.max - slider.min);
+    const thumbPos = sliderValue * rect.width;
+    const clickX = e.clientX - rect.left;
+    
+    // Only allow drag if clicking on/near the thumb (±15px tolerance for easier grabbing)
+    isDraggingThumb = Math.abs(clickX - thumbPos) <= 15;
+    lastValue = slider.value;
+    
+    if (!isDraggingThumb) {
+      e.preventDefault();
+    }
+  });
+  
+  slider.addEventListener('touchstart', (e) => {
+    const rect = slider.getBoundingClientRect();
+    const sliderValue = (slider.value - slider.min) / (slider.max - slider.min);
+    const thumbPos = sliderValue * rect.width;
+    const clickX = e.touches[0].clientX - rect.left;
+    
+    // Only allow drag if touching on/near the thumb (±15px tolerance for easier grabbing)
+    isDraggingThumb = Math.abs(clickX - thumbPos) <= 15;
+    lastValue = slider.value;
+    
+    if (!isDraggingThumb) {
+      e.preventDefault();
+    }
+  });
+  
+  slider.addEventListener('input', (e) => {
+    if (!isDraggingThumb) {
+      slider.value = lastValue;
+      e.preventDefault();
+    }
+  });
+  
+  slider.addEventListener('mouseup', () => {
+    isDraggingThumb = false;
+  });
+  
+  slider.addEventListener('touchend', () => {
+    isDraggingThumb = false;
+  });
+});
+
 // ===================== INPUT SYNC =====================
 ['leaseAmount','loanAmount','loanRate','oppRate','riskPremium','marketRent','maintenance',
  'rentIncrement','loanTenure','leaseTenure','rentDeposit','depositRefundDelay',
@@ -1043,12 +1221,26 @@ function formatCurrency(n) {
     const input = $(id);
     const range = $(id + 'Range');
     if (!range) return;
-    range.addEventListener('input', () => { input.value = range.value; calculate(); });
-    input.addEventListener('input', () => { range.value = cleanNumber(input.value); calculate(); });
+    range.addEventListener('input', () => { 
+      input.value = range.value; 
+      input.classList.add('value-update');
+      setTimeout(() => input.classList.remove('value-update'), 600);
+      calculate(); 
+    });
+    input.addEventListener('input', () => { 
+      range.value = cleanNumber(input.value); 
+      input.classList.add('value-update');
+      setTimeout(() => input.classList.remove('value-update'), 600);
+      calculate(); 
+    });
   });
 
 ['withholding','refundDelay'].forEach(id => {
-  $(id).addEventListener('input', calculate);
+  $(id).addEventListener('input', () => {
+    $(id).classList.add('value-update');
+    setTimeout(() => $(id).classList.remove('value-update'), 600);
+    calculate();
+  });
 });
 
 // ===================== EMI =====================
