@@ -911,7 +911,20 @@
             padding-top: 10px; border-top: 1px solid var(--border);
         }
         .irt-cashflow-row {
-            display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        @media (min-width: 700px) {
+            .irt-cashflow-row { grid-template-columns: repeat(5, 1fr); }
+        }
+        .irt-footnotes {
+            display: flex; flex-direction: column; gap: 4px;
+            margin-top: 10px; padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 10.5px; color: var(--muted); line-height: 1.5;
+            font-style: italic;
         }
         .irt-cf-item {
             flex: 1; min-width: 110px; padding: 8px 12px; border-radius: 8px;
@@ -1177,7 +1190,7 @@
             <span class="irt-rate-unit" id="irtRateUnit">% p.a.</span>
         </div>
         <div class="irt-net-rate" id="irtNetRateWrap" style="display:none;">
-            <span class="irt-net-label">Net implicit rate (after loan cost):</span>
+            <span class="irt-net-label" id="irtNetRateLabel">Net implicit rate (IRT − WACC):</span>
             <span class="irt-net-value" id="irtNetRateValue">—</span>
             <span class="irt-net-unit">% p.a.</span>
         </div>
@@ -1185,6 +1198,10 @@
             Enter your parameters above to see the implied return threshold.
         </div>
         <div class="irt-context" id="irtContext"></div>
+        <div class="irt-footnotes">
+            <span>⚠ IRR assumes monthly premiums are reinvested at the same rate — actual returns may differ if your reinvestment rate diverges from the IRT.</span>
+            <span>⚠ Withholding is applied uniformly to the full deposit. In practice, landlords may apply sliding-scale deductions over tenure.</span>
+        </div>
     </div>
 
     <!-- DECISION GAUGE & KPIs -->
@@ -2271,7 +2288,8 @@ function solveLeaseIRT(ownFunds, premiumStream, target) {
 function updateImpliedReturnThreshold({
     EMI, MAINTENANCE, MARKET_RENT, RENT_INCREMENT,
     depositRefundable, delayCost, OWN_FUNDS,
-    LEASE_TENURE, effectiveLoanMonths, LOAN_RATE_ANNUAL
+    LEASE_TENURE, effectiveLoanMonths, LOAN_RATE_ANNUAL,
+    LOAN_AMOUNT, LEASE_AMOUNT, CE_REAL_OPP_RATE
 }) {
     const el = id => document.getElementById(id);
 
@@ -2296,7 +2314,8 @@ function updateImpliedReturnThreshold({
     if (el('irtSurplus'))      el('irtSurplus').textContent      = formatINR(m1Premium);
     if (el('irtTarget'))       el('irtTarget').textContent       = formatINR(target);
 
-    // Helper: update net implicit rate display
+    // Helper: update net implicit rate display using WACC as cost of capital
+    // WACC = (OWN_FUNDS / LEASE_AMOUNT) × opportunity_rate + (LOAN_AMOUNT / LEASE_AMOUNT) × loan_rate
     function showNetRate(annualRate) {
         const wrap = el('irtNetRateWrap');
         const valEl = el('irtNetRateValue');
@@ -2304,11 +2323,19 @@ function updateImpliedReturnThreshold({
         if (annualRate === null || annualRate === Infinity || annualRate === undefined) {
             wrap.style.display = 'none'; return;
         }
-        const netRate = annualRate - (LOAN_RATE_ANNUAL / 100);
-        const netPct = (netRate * 100).toFixed(1);
+        const loanRateDec = LOAN_RATE_ANNUAL / 100;
+        const wacc = LEASE_AMOUNT > 0
+            ? (OWN_FUNDS / LEASE_AMOUNT) * CE_REAL_OPP_RATE * 12   // annualise monthly CE_REAL_OPP_RATE
+            + (LOAN_AMOUNT / LEASE_AMOUNT) * loanRateDec
+            : loanRateDec;
+        const netRate = annualRate - wacc;
+        const netPct  = (netRate * 100).toFixed(1);
         valEl.textContent = (netRate >= 0 ? '+' : '') + netPct;
         valEl.style.color = netRate >= 0 ? 'var(--green)' : 'var(--red)';
         wrap.style.display = 'flex';
+        // Update label to clarify it's vs WACC
+        const labelEl = el('irtNetRateLabel');
+        if (labelEl) labelEl.textContent = `Net implicit rate (IRT − WACC of ${(wacc * 100).toFixed(1)}%):`;
     }
 
     const rateEl   = el('irtRateValue');
@@ -2544,7 +2571,10 @@ function calculate() {
             OWN_FUNDS,
             LEASE_TENURE,
             effectiveLoanMonths,
-            LOAN_RATE_ANNUAL
+            LOAN_RATE_ANNUAL,
+            LOAN_AMOUNT,
+            LEASE_AMOUNT,
+            CE_REAL_OPP_RATE
         });
 
         // Update confidence card
@@ -2898,13 +2928,16 @@ function computeMonthlyRentCostFor(marketRent, LEASE_TENURE, RENT_INCREMENT, REN
 function computeMonthlyLeaseCostFor(loanRateAnnual, LOAN_AMOUNT, EFFECTIVE_LOAN_TENURE, OWN_FUNDS, LOCKED_FUNDS_RATE, LEASE_TENURE, WITHHOLDING_CLAMPED, MAINTENANCE, LEASE_AMOUNT, RISK_PREMIUM, depositRefundable, REFUND_DELAY) {
     const r = (loanRateAnnual / 100) / 12;
     const E = r === 0 ? LOAN_AMOUNT / EFFECTIVE_LOAN_TENURE : LOAN_AMOUNT * r * Math.pow(1 + r, EFFECTIVE_LOAN_TENURE) / (Math.pow(1 + r, EFFECTIVE_LOAN_TENURE) - 1);
-    const totalInterest = (E * EFFECTIVE_LOAN_TENURE) - LOAN_AMOUNT;
-    const withholdingLoss = LEASE_AMOUNT * WITHHOLDING_CLAMPED;
-    const ownFundsOppCost = OWN_FUNDS * (Math.pow(1 + LOCKED_FUNDS_RATE, LEASE_TENURE) - 1);
-    const delayCost = REFUND_DELAY > 0 ? depositRefundable * (Math.pow(1 + LOCKED_FUNDS_RATE, REFUND_DELAY) - 1) : 0;
+    const totalInterest    = (E * EFFECTIVE_LOAN_TENURE) - LOAN_AMOUNT;
+    const withholdingLoss  = LEASE_AMOUNT * WITHHOLDING_CLAMPED;
+    const tailMonths       = Math.max(0, LEASE_TENURE - EFFECTIVE_LOAN_TENURE);
+    const ownFundsOppCost  = OWN_FUNDS > 0 ? OWN_FUNDS * (Math.pow(1 + LOCKED_FUNDS_RATE, LEASE_TENURE) - 1) : 0;
+    const postLoanOppCost  = (tailMonths > 0 && LOAN_AMOUNT > 0) ? LOAN_AMOUNT * (Math.pow(1 + LOCKED_FUNDS_RATE, tailMonths) - 1) : 0;
+    const totalOppCost     = ownFundsOppCost + postLoanOppCost;
+    const delayCost        = REFUND_DELAY > 0 ? depositRefundable * (Math.pow(1 + LOCKED_FUNDS_RATE, REFUND_DELAY) - 1) : 0;
     const totalMaintenance = MAINTENANCE * LEASE_TENURE;
-    const riskCost = LEASE_AMOUNT * RISK_PREMIUM * (LEASE_TENURE / 12);
-    return (totalInterest + withholdingLoss + ownFundsOppCost + delayCost + totalMaintenance + riskCost) / LEASE_TENURE;
+    const riskCost         = LEASE_AMOUNT * RISK_PREMIUM * (LEASE_TENURE / 12);
+    return (totalInterest + withholdingLoss + totalOppCost + delayCost + totalMaintenance + riskCost) / LEASE_TENURE;
 }
 
 function computeMonthlyRentCostForGrowth(rentGrowthFrac, MARKET_RENT, LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM) {
@@ -3078,8 +3111,14 @@ function updateEarlyExit(month) {
     const d = earlyExitData[month - 1];
     if (!d) return;
     $('exitCashPaid').textContent = formatINR(d.cashPaid);
-    // depositBack now shows net recovery (deposit - outstanding loan)
-    $('exitDepositBack').textContent = formatINR(d.depositBack);
+    // Net recovery can be negative in early months (outstanding loan > deposit refund)
+    const recovery = d.depositBack;
+    $('exitDepositBack').textContent = (recovery >= 0 ? '' : '−') + formatINR(Math.abs(recovery));
+    $('exitDepositBack').style.color = recovery >= 0 ? 'var(--green)' : 'var(--red)';
+    const depositSubEl = document.querySelector('#earlyExitCard .exit-stat:nth-child(2) .exit-stat-sub');
+    if (depositSubEl) depositSubEl.textContent = recovery >= 0
+        ? 'Deposit refund less outstanding loan balance'
+        : 'Outstanding loan exceeds deposit refund — net liability at exit';
     $('exitRentCost').textContent = formatINR(d.rentCost);
     const net = d.netVsRent;
     $('exitNetPos').textContent = (net >= 0 ? '+' : '') + formatINR(Math.abs(net));
