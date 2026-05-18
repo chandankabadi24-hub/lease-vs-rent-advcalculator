@@ -895,6 +895,17 @@
             margin-bottom: 10px;
         }
         .irt-label strong { color: var(--text); }
+        .irt-net-rate {
+            display: flex; align-items: baseline; gap: 6px;
+            margin-top: -6px; margin-bottom: 12px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .irt-net-label { font-size: 12px; color: var(--muted); }
+        .irt-net-value { font-size: 18px; font-weight: 800; font-family: 'Courier New', monospace; }
+        .irt-net-unit  { font-size: 12px; color: var(--muted); }
         .irt-context {
             font-size: 11px; color: var(--muted); line-height: 1.5;
             padding-top: 10px; border-top: 1px solid var(--border);
@@ -1165,6 +1176,11 @@
             <span class="irt-rate-value" id="irtRateValue">—</span>
             <span class="irt-rate-unit" id="irtRateUnit">% p.a.</span>
         </div>
+        <div class="irt-net-rate" id="irtNetRateWrap" style="display:none;">
+            <span class="irt-net-label">Net implicit rate (after loan cost):</span>
+            <span class="irt-net-value" id="irtNetRateValue">—</span>
+            <span class="irt-net-unit">% p.a.</span>
+        </div>
         <div class="irt-label" id="irtSentence">
             Enter your parameters above to see the implied return threshold.
         </div>
@@ -1359,9 +1375,9 @@
                 <div class="exit-stat-sub">EMI + maintenance up to exit month</div>
             </div>
             <div class="exit-stat">
-                <div class="exit-stat-label">&#x1F4B0; Deposit Recovered</div>
+                <div class="exit-stat-label">&#x1F4B0; Net Deposit Recovery</div>
                 <div class="exit-stat-value" id="exitDepositBack" style="color:var(--green);">—</div>
-                <div class="exit-stat-sub">After withholding deduction</div>
+                <div class="exit-stat-sub">Deposit refund less outstanding loan balance</div>
             </div>
             <div class="exit-stat">
                 <div class="exit-stat-label">&#x1F3E0; Rent Cost Instead</div>
@@ -1376,7 +1392,7 @@
         </div>
 
         <div class="chart-container" style="height:260px;"><canvas id="earlyExitChart"></canvas></div>
-        <div class="chart-description">The line shows your net position (vs renting) if you exit at each month. Positive = lease has been worth it so far. The point where it crosses zero is when your upfront capital investment breaks even against renting.</div>
+        <div class="chart-description">Net position accounts for all lease outflows (own funds, EMI, maintenance, opportunity cost on locked capital) against the rent alternative (cumulative rent + opportunity cost on rent deposit). Positive = lease has been the better choice up to that month on a full economic basis.</div>
     </div>
 
     <!-- QUALITATIVE CHECKLIST -->
@@ -2255,7 +2271,7 @@ function solveLeaseIRT(ownFunds, premiumStream, target) {
 function updateImpliedReturnThreshold({
     EMI, MAINTENANCE, MARKET_RENT, RENT_INCREMENT,
     depositRefundable, delayCost, OWN_FUNDS,
-    LEASE_TENURE, effectiveLoanMonths
+    LEASE_TENURE, effectiveLoanMonths, LOAN_RATE_ANNUAL
 }) {
     const el = id => document.getElementById(id);
 
@@ -2279,6 +2295,21 @@ function updateImpliedReturnThreshold({
     if (el('irtRent'))         el('irtRent').textContent         = formatINR(MARKET_RENT);
     if (el('irtSurplus'))      el('irtSurplus').textContent      = formatINR(m1Premium);
     if (el('irtTarget'))       el('irtTarget').textContent       = formatINR(target);
+
+    // Helper: update net implicit rate display
+    function showNetRate(annualRate) {
+        const wrap = el('irtNetRateWrap');
+        const valEl = el('irtNetRateValue');
+        if (!wrap || !valEl) return;
+        if (annualRate === null || annualRate === Infinity || annualRate === undefined) {
+            wrap.style.display = 'none'; return;
+        }
+        const netRate = annualRate - (LOAN_RATE_ANNUAL / 100);
+        const netPct = (netRate * 100).toFixed(1);
+        valEl.textContent = (netRate >= 0 ? '+' : '') + netPct;
+        valEl.style.color = netRate >= 0 ? 'var(--green)' : 'var(--red)';
+        wrap.style.display = 'flex';
+    }
 
     const rateEl   = el('irtRateValue');
     const unitEl   = el('irtRateUnit');
@@ -2305,12 +2336,14 @@ function updateImpliedReturnThreshold({
         if (unitEl) unitEl.style.display = '';
         if (sentence) sentence.innerHTML = 'The net lease refund does not cover the total outflows (own funds + monthly premiums) even at a 0% discount rate — <strong>the lease generates a negative implicit return.</strong>';
         if (context)  context.textContent = `Total outflows: ${formatINR(OWN_FUNDS + premiumStream.reduce((s,v) => s+v, 0))}. Target inflow: ${formatINR(target)}.`;
+        showNetRate(null);
     } else if (annualRate === Infinity) {
         rateEl.textContent = '> 200';
         rateEl.style.color = 'var(--green)';
         if (unitEl) unitEl.style.display = '';
         if (sentence) sentence.innerHTML = 'The lease is generating an <strong>exceptional implicit return (> 200% p.a.)</strong> — the refund vastly outweighs total outflows at any realistic discount rate.';
         if (context)  context.textContent = `Target inflow: ${formatINR(target)}. Total undiscounted outflows: ${formatINR(OWN_FUNDS + premiumStream.reduce((s,v) => s+v, 0))}.`;
+        showNetRate(Infinity);
     } else {
         const pct = (annualRate * 100).toFixed(1);
         const color = annualRate < 0.08 ? 'var(--red)' : annualRate < 0.15 ? 'var(--amber)' : 'var(--green)';
@@ -2325,6 +2358,7 @@ function updateImpliedReturnThreshold({
         else if (annualRate < 0.25) qualifier = 'Strong implicit return — the lease is working hard for you on a capital efficiency basis.';
         else                         qualifier = 'Exceptional implicit return — this lease arrangement is extremely capital efficient.';
         if (context) context.textContent = qualifier;
+        showNetRate(annualRate);
     }
 }
 
@@ -2396,10 +2430,22 @@ function calculate() {
 
         const withholdingLoss = LEASE_AMOUNT * WITHHOLDING_CLAMPED;
         const depositRefundable = LEASE_AMOUNT * (1 - WITHHOLDING_CLAMPED);
-        const ownFundsOppCost = OWN_FUNDS * (Math.pow(1 + LOCKED_FUNDS_RATE, LEASE_TENURE) - 1);
+
+        // Opportunity cost on locked capital — two phases:
+        // Phase 1 (months 1 → effectiveLoanMonths): only OWN_FUNDS is your capital locked in
+        // Phase 2 (months effectiveLoanMonths+1 → LEASE_TENURE): loan is repaid, full LEASE_AMOUNT
+        //   is now effectively your capital — opportunity cost on the additional LOAN_AMOUNT kicks in
+        const tailMonths = Math.max(0, LEASE_TENURE - effectiveLoanMonths);
+        const ownFundsOppCost = OWN_FUNDS > 0
+            ? OWN_FUNDS * (Math.pow(1 + LOCKED_FUNDS_RATE, LEASE_TENURE) - 1)
+            : 0;
+        const postLoanOppCost = (tailMonths > 0 && LOAN_AMOUNT > 0)
+            ? LOAN_AMOUNT * (Math.pow(1 + LOCKED_FUNDS_RATE, tailMonths) - 1)
+            : 0;
+        const totalOwnFundsOppCost = ownFundsOppCost + postLoanOppCost;
         const delayCost = REFUND_DELAY > 0 ? depositRefundable * (Math.pow(1 + LOCKED_FUNDS_RATE, REFUND_DELAY) - 1) : 0;
         const totalMaintenanceCost = MAINTENANCE * LEASE_TENURE;
-        const totalLeaseCostWithoutRisk = totalInterestPaid + withholdingLoss + ownFundsOppCost + delayCost + totalMaintenanceCost;
+        const totalLeaseCostWithoutRisk = totalInterestPaid + withholdingLoss + totalOwnFundsOppCost + delayCost + totalMaintenanceCost;
         const riskCost = LEASE_AMOUNT * RISK_PREMIUM * (LEASE_TENURE / 12);
         const riskAdjustedLeaseCost = totalLeaseCostWithoutRisk + riskCost;
         const monthlyLeaseCost = riskAdjustedLeaseCost / LEASE_TENURE;
@@ -2497,7 +2543,8 @@ function calculate() {
             delayCost,
             OWN_FUNDS,
             LEASE_TENURE,
-            effectiveLoanMonths
+            effectiveLoanMonths,
+            LOAN_RATE_ANNUAL
         });
 
         // Update confidence card
@@ -2515,7 +2562,7 @@ function calculate() {
         updateScenarioGrid({ MARKET_RENT, RENT_INCREMENT, LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM, monthlyLeaseCost });
 
         // Early exit analysis
-        buildEarlyExitData({ LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths, LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT, OWN_FUNDS });
+        buildEarlyExitData({ LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths, LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT, OWN_FUNDS, LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE });
 
         // --- CHART DATA ---
         // TCO: separate cash costs vs opportunity costs
@@ -3031,36 +3078,84 @@ function updateEarlyExit(month) {
     const d = earlyExitData[month - 1];
     if (!d) return;
     $('exitCashPaid').textContent = formatINR(d.cashPaid);
+    // depositBack now shows net recovery (deposit - outstanding loan)
     $('exitDepositBack').textContent = formatINR(d.depositBack);
     $('exitRentCost').textContent = formatINR(d.rentCost);
     const net = d.netVsRent;
     $('exitNetPos').textContent = (net >= 0 ? '+' : '') + formatINR(Math.abs(net));
     $('exitNetPos').style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
-    $('exitNetSub').textContent = net >= 0 ? 'Lease has been cheaper so far' : 'Renting would have been cheaper';
+    $('exitNetSub').textContent = net >= 0 ? 'Lease has been cheaper so far (incl. opp. cost)' : 'Renting would have been cheaper (incl. opp. cost)';
     const slider = $('exitMonthSlider');
     if (slider) slider.value = month;
 }
 
 function buildEarlyExitData(params) {
     const { LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths,
-            LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT, OWN_FUNDS } = params;
+            LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT, OWN_FUNDS,
+            LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE } = params;
+
     const depositBack = LEASE_AMOUNT * (1 - WITHHOLDING_CLAMPED);
     earlyExitData = [];
+
     let cumulEMI = 0, cumulMaint = 0, cumulRent = 0;
     let balance = LOAN_AMOUNT;
+
     for (let m = 1; m <= LEASE_TENURE; m++) {
+        // Amortise loan
         if (m <= effectiveLoanMonths) {
-            const interest = balance * LOAN_RATE_MONTHLY;
+            const interest  = balance * LOAN_RATE_MONTHLY;
             const principal = EMI - interest;
             balance = Math.max(0, balance - principal);
             cumulEMI += EMI;
         }
         cumulMaint += MAINTENANCE;
-        cumulRent += MARKET_RENT * Math.pow(1 + RENT_INCREMENT, Math.floor((m - 1) / 12));
+
+        const yearIndex = Math.floor((m - 1) / 12);
+        cumulRent += MARKET_RENT * Math.pow(1 + RENT_INCREMENT, yearIndex);
+
+        // ── LEASE SIDE ──────────────────────────────────────────────────
+        // Capital locked at month m:
+        //   Phase 1 (m <= effectiveLoanMonths): OWN_FUNDS locked
+        //   Phase 2 (m > effectiveLoanMonths):  full LEASE_AMOUNT locked (loan repaid)
+        // Opportunity cost is month-by-month compounding of the locked capital
+        // Approximation: compound the appropriate locked amount for m months
+        const lockedCapital = m <= effectiveLoanMonths ? OWN_FUNDS : LEASE_AMOUNT;
+        // For phase 2, additional opp cost on LOAN_AMOUNT starts from effectiveLoanMonths
+        const phase1OppCost = OWN_FUNDS * (Math.pow(1 + LOCKED_FUNDS_RATE, m) - 1);
+        const phase2Months  = Math.max(0, m - effectiveLoanMonths);
+        const phase2OppCost = phase2Months > 0
+            ? LOAN_AMOUNT * (Math.pow(1 + LOCKED_FUNDS_RATE, phase2Months) - 1)
+            : 0;
+        const totalOppCost = phase1OppCost + phase2OppCost;
+
+        // Total lease cost at exit month m:
+        // OWN_FUNDS (upfront) + cumulative EMI + cumulative maintenance + opp cost on locked capital
+        // Less: what you recover = depositBack - outstanding loan balance
+        const leaseNetRecovery = depositBack - balance;
+        const leaseTotalCost   = OWN_FUNDS + cumulEMI + cumulMaint + totalOppCost - leaseNetRecovery;
+
+        // ── RENT SIDE ────────────────────────────────────────────────────
+        // Cumulative rent paid + opportunity cost on rent deposit locked for m months
+        // Less: rent deposit recovered at exit (assumed full recovery for rent)
+        const rentDepositOppCost = RENT_DEPOSIT * (Math.pow(1 + CE_REAL_OPP_RATE, m) - 1);
+        const rentTotalCost      = cumulRent + rentDepositOppCost;
+        // Rent deposit recovered at exit — net rent cost
+        // (rent deposit itself is returned so it's a wash on capital, only opp cost is the true cost)
+
+        // ── NET POSITION ─────────────────────────────────────────────────
+        // Positive = lease has been cheaper (lease total cost < rent total cost)
+        const netVsRent = rentTotalCost - leaseTotalCost;
+
         const cashPaid = cumulEMI + cumulMaint;
-        // Net: deposit_back - loan_remaining - cash_paid + deposit_refund_notional vs rent
-        const netVsRent = depositBack - balance - cashPaid - OWN_FUNDS + cumulRent;
-        earlyExitData.push({ month: m, cashPaid, depositBack, rentCost: cumulRent, netVsRent, loanBalance: balance });
+        earlyExitData.push({
+            month: m,
+            cashPaid,
+            depositBack: leaseNetRecovery,  // net recovery shown to user
+            rentCost: cumulRent,
+            netVsRent,
+            loanBalance: balance,
+            oppCost: totalOppCost
+        });
     }
 
     // Update slider max
@@ -3070,27 +3165,25 @@ function buildEarlyExitData(params) {
     // Draw chart
     const colors = getChartColors();
     const months = earlyExitData.map(d => 'M' + d.month);
-    const nets = earlyExitData.map(d => d.netVsRent);
+    const nets   = earlyExitData.map(d => d.netVsRent);
     if (earlyExitChart) { earlyExitChart.destroy(); earlyExitChart = null; }
     earlyExitChart = new Chart($('earlyExitChart'), {
         type: 'line',
         data: {
             labels: months,
-            datasets: [
-                {
-                    label: 'Net Position vs Renting (₹)',
-                    data: nets,
-                    borderWidth: 3,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 6,
-                    fill: true,
-                    segment: {
-                        borderColor: ctx => nets[ctx.p1DataIndex] >= 0 ? 'rgba(46,204,113,0.9)' : 'rgba(255,77,77,0.9)',
-                        backgroundColor: ctx => nets[ctx.p1DataIndex] >= 0 ? 'rgba(46,204,113,0.1)' : 'rgba(255,77,77,0.1)'
-                    }
+            datasets: [{
+                label: 'Net Position vs Renting (₹)',
+                data: nets,
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                fill: true,
+                segment: {
+                    borderColor:     ctx => nets[ctx.p1DataIndex] >= 0 ? 'rgba(46,204,113,0.9)' : 'rgba(255,77,77,0.9)',
+                    backgroundColor: ctx => nets[ctx.p1DataIndex] >= 0 ? 'rgba(46,204,113,0.1)' : 'rgba(255,77,77,0.1)'
                 }
-            ]
+            }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
@@ -3107,7 +3200,6 @@ function buildEarlyExitData(params) {
         }
     });
 
-    // Trigger display for current slider value
     updateEarlyExit($('exitMonthSlider') ? $('exitMonthSlider').value : Math.min(12, LEASE_TENURE));
 }
 
