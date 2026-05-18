@@ -1141,6 +1141,10 @@
         <div class="card-title"><span class="card-icon">⚡</span>Implied Return Threshold</div>
         <div class="irt-cashflow-row">
             <div class="irt-cf-item">
+                <div class="irt-cf-label">Own Funds (t=0)</div>
+                <div class="irt-cf-value" id="irtOwnFunds" style="color:var(--red);">—</div>
+            </div>
+            <div class="irt-cf-item">
                 <div class="irt-cf-label">Lease Outflow (EMI + Maint)</div>
                 <div class="irt-cf-value" id="irtLeaseOutflow" style="color:var(--red);">—</div>
             </div>
@@ -2193,63 +2197,55 @@ function renderValidation(errors, warnings) {
 
 /* ================= IMPLIED RETURN THRESHOLD ================= */
 /**
- * Solves for the monthly rate rm such that the FV of a GROWING stream of
- * monthly lease premium stream (each compounded forward to end of tenure) equals targetFV.
+ * Full IRR computation for the lease arrangement.
  *
- * The IRT is the implicit return the lease generates on the incremental monthly outlay:
- *   premium_m = emi_m + MAINTENANCE - rent_m
- * where rent_m escalates annually, and emi_m = 0 after effectiveLoanMonths.
+ * Cashflow structure:
+ *   t=0  : -OWN_FUNDS                         (lump sum deployed into deposit)
+ *   t=m  : -(EMI_m + MAINTENANCE - rent_m)     (monthly lease premium over renting)
+ *          Note: premium_m can be negative in EMI-free tail months — handled naturally
+ *   t=N  : +(depositRefundable - delayCost)    (terminal inflow at lease end)
  *
- * By choosing lease, you pay premium_m extra each month vs renting.
- * At lease end you receive (depositRefundable - delayCost) back.
- * IRT is the rate at which those monthly premiums, if invested, would compound
- * to exactly match that refund — i.e. the implicit return the lease is delivering.
+ * IRR is rm such that NPV of all cashflows = 0:
+ *   -OWN_FUNDS
+ *   - Σ premium_m / (1+rm)^m        for m = 1..N
+ *   + target / (1+rm)^N
+ *   = 0
  *
- * FV of premium stream at monthly rate rm:
- *   FV(rm) = Σ premium_m × (1 + rm)^(N - m)   for m = 1..N
- *
- * Bisect on rm to find FV(rm) = target, then annualise.
- *
- * Returns:
- *   number   → solved annual rate (decimal)
- *   null     → FV at rm=0 already >= target (lease delivers positive return even at 0%)
- *   Infinity → target unreachably large — lease premium too small to ever reach refund
+ * Bisection on rm. Returns annualised rate (decimal).
+ * Returns null if NPV is always negative (lease never pays back — rate is negative).
+ * Returns Infinity if NPV is always positive within ceiling (target too large).
  */
-function solveLeaseIRT(premiumStream, targetFV) {
+function solveLeaseIRT(ownFunds, premiumStream, target) {
     const N = premiumStream.length;
-    if (N === 0 || targetFV <= 0) return null;
 
-    function fv(rm) {
-        let total = 0;
+    function npv(rm) {
+        let val = -ownFunds;
         for (let m = 0; m < N; m++) {
-            total += premiumStream[m] * Math.pow(1 + rm, N - 1 - m);
+            val -= premiumStream[m] / Math.pow(1 + rm, m + 1);
         }
-        return total;
+        val += target / Math.pow(1 + rm, N);
+        return val;
     }
 
-    const fvAtZero = premiumStream.reduce((s, v) => s + v, 0);
+    // At rm=0: NPV = -ownFunds - Σpremium_m + target
+    const npvAtZero = -ownFunds - premiumStream.reduce((s, v) => s + v, 0) + target;
 
-    // Undiscounted sum of premiums already >= target → IRT > 0 even without compounding
-    // Solve normally — this just means the rate is low (near zero)
-    // Actually if fvAtZero >= target, solution exists near rm=0 — bisect from negative side
-    // Simpler: if sum >= target, return near-zero (the actual solve will find it near 0)
+    // If NPV at 0 is still negative, IRR is negative — lease doesn't break even
+    if (npvAtZero <= 0) return null;
 
-    // Upper bound: 200% p.a.
+    // Upper ceiling: 200% p.a. = ~16.67% monthly
     const HIGH = 2.0 / 12;
-    const fvAtHigh = fv(HIGH);
-    if (fvAtHigh < targetFV) return Infinity; // premium stream too small at any rate
+    const npvAtHigh = npv(HIGH);
 
-    // Lower bound: 0 (rates below 0 not meaningful for IRT interpretation)
-    if (fv(0) >= targetFV) {
-        // Rate is effectively 0 or slightly negative — return 0 as floor
-        return 0;
-    }
+    // NPV should be negative at HIGH (standard IRR: NPV decreasing in r)
+    // If still positive at HIGH, IRR > 200% p.a.
+    if (npvAtHigh > 0) return Infinity;
 
-    // Bisection between 0 and HIGH
+    // Bisection: find rm where NPV crosses zero
     let lo = 0, hi = HIGH;
     for (let i = 0; i < 120; i++) {
         const mid = (lo + hi) / 2;
-        if (fv(mid) < targetFV) lo = mid;
+        if (npv(mid) > 0) lo = mid;
         else hi = mid;
         if (hi - lo < 1e-10) break;
     }
@@ -2258,30 +2254,27 @@ function solveLeaseIRT(premiumStream, targetFV) {
 
 function updateImpliedReturnThreshold({
     EMI, MAINTENANCE, MARKET_RENT, RENT_INCREMENT,
-    depositRefundable, delayCost,
+    depositRefundable, delayCost, OWN_FUNDS,
     LEASE_TENURE, effectiveLoanMonths
 }) {
     const el = id => document.getElementById(id);
 
-    // Target: refund adjusted for delay cost — the real value of what comes back to you
+    // Target: refund net of delay cost — real value of what comes back at lease end
     const target = Math.max(0, depositRefundable - delayCost);
 
-    // Build month-by-month lease premium stream: what extra you pay vs renting
-    // premium_m = (EMI_m + MAINTENANCE) - rent_m
-    // Note: rent escalates; EMI drops to 0 after loan tenure ends
+    // Month-by-month premium stream: what extra you pay vs renting each month
+    // Negative premium months (EMI-free tail, or rent > outflow) are valid — included as-is
     const premiumStream = [];
-    let anyPositivePremium = false;
     for (let m = 1; m <= LEASE_TENURE; m++) {
         const yearIndex = Math.floor((m - 1) / 12);
         const rentM    = MARKET_RENT * Math.pow(1 + RENT_INCREMENT, yearIndex);
         const emiM     = m <= effectiveLoanMonths ? EMI : 0;
-        const premiumM = emiM + MAINTENANCE - rentM;
-        premiumStream.push(premiumM);
-        if (premiumM > 0) anyPositivePremium = true;
+        premiumStream.push(emiM + MAINTENANCE - rentM);
     }
 
-    // Display: Month-1 values as intuitive anchors
+    // Display anchors
     const m1Premium = EMI + MAINTENANCE - MARKET_RENT;
+    if (el('irtOwnFunds'))     el('irtOwnFunds').textContent     = formatINR(OWN_FUNDS);
     if (el('irtLeaseOutflow')) el('irtLeaseOutflow').textContent = formatINR(EMI + MAINTENANCE);
     if (el('irtRent'))         el('irtRent').textContent         = formatINR(MARKET_RENT);
     if (el('irtSurplus'))      el('irtSurplus').textContent      = formatINR(m1Premium);
@@ -2293,48 +2286,41 @@ function updateImpliedReturnThreshold({
     const context  = el('irtContext');
     if (!rateEl) return;
 
-    // Case: lease is cheaper on cashflow in every month — no premium to invest, IRT not applicable
-    if (!anyPositivePremium) {
+    // Target eroded to zero — lease refund wiped by delay cost
+    if (target <= 0) {
         rateEl.textContent = 'N/A';
         rateEl.style.color = 'var(--muted)';
         if (unitEl)   unitEl.style.display = 'none';
-        if (sentence) sentence.innerHTML = 'Lease outflow is lower than rent in every month — <strong>IRT is not applicable here.</strong> The lease already wins on cashflow; the deposit refund is an additional gain on top.';
-        if (context)  context.textContent = 'IRT measures the implicit return on the monthly lease premium over rent. When the lease is cheaper monthly, no premium exists to benchmark.';
-        return;
-    }
-
-    // Target eroded to zero by delay cost
-    if (target <= 0) {
-        rateEl.textContent = '0';
-        rateEl.style.color = 'var(--red)';
-        if (unitEl) unitEl.style.display = '';
-        if (sentence) sentence.innerHTML = 'The refund delay cost fully erodes the net lease refund — <strong>the lease premium you pay earns 0% or less.</strong>';
+        if (sentence) sentence.innerHTML = 'The refund delay cost fully erodes the net lease refund — <strong>the lease generates no recoverable return.</strong>';
         if (context)  context.textContent = `Gross refundable: ${formatINR(depositRefundable)}. Delay cost: ${formatINR(delayCost)}.`;
         return;
     }
 
-    const annualRate = solveLeaseIRT(premiumStream, target);
+    const annualRate = solveLeaseIRT(OWN_FUNDS, premiumStream, target);
 
-    if (annualRate === Infinity) {
-        // Premium stream FV never reaches target even at 200% p.a. — deposit too large
-        rateEl.textContent = '> 200';
+    if (annualRate === null) {
+        // NPV negative at r=0 — lease doesn't even break even in nominal terms
+        rateEl.textContent = '< 0';
         rateEl.style.color = 'var(--red)';
         if (unitEl) unitEl.style.display = '';
-        if (sentence) sentence.innerHTML = 'The net lease refund is far larger than the compounded premium stream at any realistic rate — <strong>the lease premium alone cannot account for the refund.</strong> This typically means own-funds locked in the deposit are doing most of the work.';
-        if (context)  context.textContent = `Delay-adjusted refund: ${formatINR(target)}. Undiscounted premium sum: ${formatINR(premiumStream.reduce((s,v)=>s+v,0))}.`;
+        if (sentence) sentence.innerHTML = 'The net lease refund does not cover the total outflows (own funds + monthly premiums) even at a 0% discount rate — <strong>the lease generates a negative implicit return.</strong>';
+        if (context)  context.textContent = `Total outflows: ${formatINR(OWN_FUNDS + premiumStream.reduce((s,v) => s+v, 0))}. Target inflow: ${formatINR(target)}.`;
+    } else if (annualRate === Infinity) {
+        rateEl.textContent = '> 200';
+        rateEl.style.color = 'var(--green)';
+        if (unitEl) unitEl.style.display = '';
+        if (sentence) sentence.innerHTML = 'The lease is generating an <strong>exceptional implicit return (> 200% p.a.)</strong> — the refund vastly outweighs total outflows at any realistic discount rate.';
+        if (context)  context.textContent = `Target inflow: ${formatINR(target)}. Total undiscounted outflows: ${formatINR(OWN_FUNDS + premiumStream.reduce((s,v) => s+v, 0))}.`;
     } else {
         const pct = (annualRate * 100).toFixed(1);
-        // Color semantics: IRT vs typical opportunity rates
-        // High IRT = lease is delivering strong implicit returns → green
-        // Low IRT = lease barely justifies the premium → red
         const color = annualRate < 0.08 ? 'var(--red)' : annualRate < 0.15 ? 'var(--amber)' : 'var(--green)';
         rateEl.textContent = pct;
         rateEl.style.color = color;
         if (unitEl) unitEl.style.display = '';
-        if (sentence) sentence.innerHTML = `This lease arrangement is implicitly generating <strong>${pct}% p.a.</strong> on your monthly premium — that is the return you are effectively earning by choosing lease over rent.`;
+        if (sentence) sentence.innerHTML = `This lease arrangement is implicitly generating <strong>${pct}% p.a.</strong> on your total capital deployed — own funds locked in plus the monthly premium over rent.`;
         let qualifier = '';
         if      (annualRate < 0.07) qualifier = 'Below FD rates — the lease is not delivering sufficient implicit return. Renting and investing the difference would likely outperform.';
-        else if (annualRate < 0.11) qualifier = 'Comparable to debt fund returns. Marginal case — weigh against your actual opportunity rate.';
+        else if (annualRate < 0.11) qualifier = 'Comparable to debt fund returns. Marginal case — weigh directly against your opportunity rate input.';
         else if (annualRate < 0.15) qualifier = 'In line with balanced fund / equity returns. Lease is delivering a reasonable implicit return.';
         else if (annualRate < 0.25) qualifier = 'Strong implicit return — the lease is working hard for you on a capital efficiency basis.';
         else                         qualifier = 'Exceptional implicit return — this lease arrangement is extremely capital efficient.';
@@ -2509,6 +2495,7 @@ function calculate() {
             RENT_INCREMENT,
             depositRefundable,
             delayCost,
+            OWN_FUNDS,
             LEASE_TENURE,
             effectiveLoanMonths
         });
