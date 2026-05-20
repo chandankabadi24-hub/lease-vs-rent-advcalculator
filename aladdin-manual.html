@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aladdin Finance BI — User Manual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #060d15;
+  --surface:   #0c1824;
+  --card:      #0e1e2e;
+  --border:    #1a2f42;
+  --text:      #dce8f2;
+  --muted:     #7a9ab4;
+  --accent:    #4db3ff;
+  --green:     #2ecc71;
+  --amber:     #f1c40f;
+  --red:       #ff4d4d;
+  --purple:    #9b59b6;
+  --cyan:      #00d4ff;
+  --orange:    #ff8c3a;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ── COVER ───────────────────────────────────────────── */
+.cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 60px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+.cover-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(77,179,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,179,255,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+.cover-glow {
+  position: absolute;
+  width: 640px; height: 640px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(77,179,255,0.08) 0%, transparent 70%);
+  top: -160px; right: -160px;
+  pointer-events: none;
+}
+
+.cover-glow-2 {
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(155,89,182,0.06) 0%, transparent 70%);
+  bottom: -100px; left: 60px;
+  pointer-events: none;
+}
+
+.cover-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+  opacity: 0.8;
+}
+
+.cover-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(42px, 7vw, 88px);
+  line-height: 1.05;
+  letter-spacing: -1px;
+  color: var(--text);
+  max-width: 820px;
+  margin-bottom: 32px;
+}
+
+.cover-title em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cover-sub {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 580px;
+  line-height: 1.6;
+  font-weight: 300;
+  margin-bottom: 52px;
+}
+
+.cover-meta {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.cover-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cover-meta-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cover-meta-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── LAYOUT ──────────────────────────────────────────── */
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ── TOC ─────────────────────────────────────────────── */
+.toc-section {
+  padding: 72px 0 56px;
+  border-bottom: 1px solid var(--border);
+}
+
+.toc-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 32px;
+}
+
+.toc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 40px;
+}
+
+.toc-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.2s;
+}
+
+.toc-item:hover { color: var(--accent); }
+
+.toc-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--border);
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.toc-item:hover .toc-num { color: var(--accent); }
+
+/* ── SECTIONS ────────────────────────────────────────── */
+.section {
+  padding: 72px 0 48px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section:last-child { border-bottom: none; }
+
+.section-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin-bottom: 28px;
+}
+
+.section-title em {
+  font-style: italic;
+  color: var(--accent);
+  -webkit-text-fill-color: var(--accent);
+}
+
+.section-lead {
+  font-size: 17px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 720px;
+  margin-bottom: 40px;
+  font-weight: 300;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.75;
+  margin-bottom: 20px;
+}
+
+p strong { color: var(--text); font-weight: 600; }
+
+h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 36px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+h3::before {
+  content: '';
+  width: 3px; height: 18px;
+  background: var(--accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 24px 0 10px;
+}
+
+/* ── CALLOUT BOXES ───────────────────────────────────── */
+.callout {
+  border-left: 3px solid var(--accent);
+  background: rgba(77,179,255,0.05);
+  border-radius: 0 10px 10px 0;
+  padding: 18px 22px;
+  margin: 28px 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.callout.warning {
+  border-color: var(--amber);
+  background: rgba(241,196,15,0.05);
+}
+
+.callout.success {
+  border-color: var(--green);
+  background: rgba(46,204,113,0.05);
+}
+
+.callout.danger {
+  border-color: var(--red);
+  background: rgba(255,77,77,0.05);
+}
+
+.callout-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.callout.warning .callout-label { color: var(--amber); }
+.callout.success .callout-label { color: var(--green); }
+.callout.danger  .callout-label { color: var(--red); }
+
+/* ── PARAM TABLE ─────────────────────────────────────── */
+.param-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 14px;
+}
+
+.param-table th {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+}
+
+.param-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.param-table tr:hover td { background: rgba(77,179,255,0.03); }
+
+.param-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.param-range {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--amber);
+}
+
+.param-desc { color: var(--muted); }
+
+/* ── SCORE TABLE ─────────────────────────────────────── */
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 14px;
+}
+
+.score-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* ── FORMULA BOX ─────────────────────────────────────── */
+.formula-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 26px;
+  margin: 28px 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text);
+  overflow-x: auto;
+}
+
+.formula-comment { color: var(--muted); }
+.formula-key { color: var(--cyan); }
+.formula-val { color: var(--amber); }
+.formula-op  { color: var(--purple); }
+
+/* ── PRESET CARDS ────────────────────────────────────── */
+.preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.preset-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  transition: border-color 0.2s;
+}
+
+.preset-card:hover { border-color: var(--accent); }
+
+.preset-emoji { font-size: 24px; margin-bottom: 10px; }
+
+.preset-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.preset-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(77,179,255,0.08);
+  color: var(--accent);
+  border: 1px solid rgba(77,179,255,0.2);
+}
+
+/* ── CHART EXPLAINER CARDS ───────────────────────────── */
+.chart-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 28px 0;
+}
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+.chart-card-icon { font-size: 20px; margin-bottom: 8px; }
+
+.chart-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.chart-card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── SHORTCUT TABLE ──────────────────────────────────── */
+.kbd {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 8px;
+  color: var(--accent);
+}
+
+/* ── MISTAKE LIST ────────────────────────────────────── */
+.mistake-list {
+  list-style: none;
+  margin: 20px 0;
+}
+
+.mistake-list li {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: flex-start;
+}
+
+.mistake-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.mistake-text { color: var(--muted); font-size: 14px; line-height: 1.6; }
+.mistake-text strong { color: var(--text); }
+
+/* ── STEP LIST ───────────────────────────────────────── */
+.steps {
+  counter-reset: step;
+  list-style: none;
+  margin: 28px 0;
+}
+
+.steps li {
+  display: flex;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  align-items: flex-start;
+  counter-increment: step;
+}
+
+.steps li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  flex-shrink: 0;
+  padding-top: 2px;
+  opacity: 0.7;
+}
+
+.step-content { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.step-content strong { color: var(--text); }
+
+/* ── FOOTER ──────────────────────────────────────────── */
+.doc-footer {
+  padding: 48px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.doc-footer-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.doc-footer-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+/* ── INLINE BADGE ────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.badge-blue   { background: rgba(77,179,255,0.15);  color: var(--accent); }
+.badge-green  { background: rgba(46,204,113,0.15);  color: var(--green); }
+.badge-amber  { background: rgba(241,196,15,0.15);  color: var(--amber); }
+.badge-red    { background: rgba(255,77,77,0.15);   color: var(--red); }
+.badge-purple { background: rgba(155,89,182,0.15);  color: var(--purple); }
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cover { padding: 60px 28px; }
+  .page  { padding: 0 24px; }
+  .toc-grid { grid-template-columns: 1fr; }
+  .preset-grid { grid-template-columns: 1fr; }
+  .chart-cards { grid-template-columns: 1fr; }
+  .section { padding: 52px 0 36px; }
+  .cover-meta { gap: 28px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ COVER ══════════ -->
+<div class="cover">
+  <div class="cover-grid"></div>
+  <div class="cover-glow"></div>
+  <div class="cover-glow-2"></div>
+  <div style="position:relative;">
+    <div class="cover-label">Aladdin Finance BI — Documentation</div>
+    <h1 class="cover-title">The <em>Lease vs&nbsp;Rent</em><br>Decision Engine</h1>
+    <p class="cover-sub">A complete write-up and user manual for the Aladdin Finance BI dashboard — what it does, how it works, and how to get the most out of it.</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Version</span>
+        <span class="cover-meta-value">1.1 (Post-fix)</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Market</span>
+        <span class="cover-meta-value">India — INR</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Property Types</span>
+        <span class="cover-meta-value">Residential · Retail · Office · Warehouse</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="cover-meta-label">Format</span>
+        <span class="cover-meta-value">Single-file HTML dashboard</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TOC ══════════ -->
+<div class="page">
+<div class="toc-section">
+  <div class="toc-title">Contents</div>
+  <div class="toc-grid">
+    <a href="#s1" class="toc-item"><span class="toc-num">01</span> What this tool does</a>
+    <a href="#s6" class="toc-item"><span class="toc-num">06</span> Reading the outputs</a>
+    <a href="#s2" class="toc-item"><span class="toc-num">02</span> The financial model</a>
+    <a href="#s7" class="toc-item"><span class="toc-num">07</span> Charts explained</a>
+    <a href="#s3" class="toc-item"><span class="toc-num">03</span> Quick start</a>
+    <a href="#s8" class="toc-item"><span class="toc-num">08</span> Advanced features</a>
+    <a href="#s4" class="toc-item"><span class="toc-num">04</span> Input reference</a>
+    <a href="#s9" class="toc-item"><span class="toc-num">09</span> Common mistakes</a>
+    <a href="#s5" class="toc-item"><span class="toc-num">05</span> Preset scenarios</a>
+    <a href="#s10" class="toc-item"><span class="toc-num">10</span> Keyboard &amp; tips</a>
+  </div>
+</div>
+
+<!-- ══════════ S1 ══════════ -->
+<div class="section" id="s1">
+  <div class="section-eyebrow">01 — Overview</div>
+  <h2 class="section-title">What this tool does</h2>
+  <p class="section-lead">Aladdin Finance BI answers one question: over a given tenure, is it cheaper to lease a property (paying a large refundable deposit instead of monthly rent) or to rent it the conventional way?</p>
+
+  <p>In India's residential and commercial property market, the <strong>lease model</strong> — also called the <em>pagdi</em> or security deposit model in some regions — is widespread. A tenant pays a large lump sum upfront (the lease deposit) to the landlord in lieu of monthly rent. The deposit is returned at the end of the term. Under a rental agreement, the tenant pays monthly rent plus a much smaller deposit (typically 2–10 months' rent).</p>
+
+  <p>At first glance, leasing looks free — no monthly payments. But that capital is locked up for years, earning nothing. The real question is: <strong>what does that lock-up cost you?</strong> And does it cost more or less than paying monthly rent over the same period?</p>
+
+  <p>The tool makes that comparison rigorous, accounting for:</p>
+
+  <ul class="mistake-list">
+    <li><span class="mistake-icon">💰</span><span class="mistake-text"><strong>EMI costs</strong> — if you borrowed to fund the deposit, what are you repaying each month, and what interest does that add up to?</span></li>
+    <li><span class="mistake-icon">📈</span><span class="mistake-text"><strong>Opportunity cost</strong> — what could your locked capital have earned if invested instead? This is the single biggest hidden cost of leasing.</span></li>
+    <li><span class="mistake-icon">📉</span><span class="mistake-text"><strong>Rent escalation</strong> — monthly rent grows every year; the lease deposit stays fixed. Over time, rent compounds against you.</span></li>
+    <li><span class="mistake-icon">⚠️</span><span class="mistake-text"><strong>Withholding risk</strong> — landlords sometimes withhold part of the deposit at exit. That loss is a real cost.</span></li>
+    <li><span class="mistake-icon">🔒</span><span class="mistake-text"><strong>Liquidity risk</strong> — a large locked deposit is illiquid; that illiquidity has a price.</span></li>
+    <li><span class="mistake-icon">🚪</span><span class="mistake-text"><strong>Flexibility value</strong> — a rental gives you the right to leave with short notice; a lease doesn't.</span></li>
+  </ul>
+
+  <div class="callout">
+    <span class="callout-label">Who this is for</span>
+    Individuals evaluating a residential lease deposit, retail or commercial business owners assessing a shop or office lease, and finance teams modelling a property strategy across multiple scenarios. The tool is built for the Indian market — all figures in INR — but the underlying model applies anywhere these structures exist.
+  </div>
+</div>
+
+<!-- ══════════ S2 ══════════ -->
+<div class="section" id="s2">
+  <div class="section-eyebrow">02 — The Model</div>
+  <h2 class="section-title">The <em>financial model</em> under the hood</h2>
+  <p class="section-lead">Both the lease and rent paths are converted to a single comparable number: their economic monthly cost over the lease term.</p>
+
+  <h3>Lease cost</h3>
+  <p>The total economic cost of leasing over a term of <strong>N months</strong> is:</p>
+
+  <div class="formula-box">
+<span class="formula-comment">// Lease total economic cost</span>
+<span class="formula-key">Total Lease Cost</span> <span class="formula-op">=</span>
+  <span class="formula-val">Total EMI Interest Paid</span>        <span class="formula-comment">// real cash, interest portion only</span>
+  <span class="formula-op">+</span> <span class="formula-val">Withholding Loss</span>               <span class="formula-comment">// deposit × withholding %</span>
+  <span class="formula-op">+</span> <span class="formula-val">Own Funds Opportunity Cost</span>     <span class="formula-comment">// compounded over term</span>
+  <span class="formula-op">+</span> <span class="formula-val">Post-Loan Opportunity Cost</span>     <span class="formula-comment">// tail months after loan repaid</span>
+  <span class="formula-op">+</span> <span class="formula-val">Refund Delay Cost</span>              <span class="formula-comment">// delay months × opp rate</span>
+  <span class="formula-op">+</span> <span class="formula-val">Total Maintenance</span>              <span class="formula-comment">// monthly maint × N</span>
+  <span class="formula-op">+</span> <span class="formula-val">Risk Cost</span>                      <span class="formula-comment">// deposit × risk % × (N/12)</span>
+
+<span class="formula-key">Monthly Lease Cost</span> <span class="formula-op">=</span> Total Lease Cost <span class="formula-op">/</span> N
+  </div>
+
+  <p>The opportunity cost is computed in two phases. During the loan repayment period, only <em>own funds</em> (deposit minus loan) are truly your locked capital — the borrowed portion was never yours to invest. After the loan is repaid, the full deposit is effectively your capital, so the full deposit bears opportunity cost for the tail months. This is a more accurate model than simply applying the opportunity rate to the entire deposit for the full term.</p>
+
+  <h3>Rent cost</h3>
+
+  <div class="formula-box">
+<span class="formula-comment">// Rent total economic cost over same term</span>
+<span class="formula-key">Total Rent Cost</span> <span class="formula-op">=</span>
+  <span class="formula-val">Σ Monthly Rent × (1 + growth)^year</span>  <span class="formula-comment">// escalating annually</span>
+  <span class="formula-op">+</span> <span class="formula-val">Rent Deposit Opportunity Cost</span>           <span class="formula-comment">// compounded over term</span>
+  <span class="formula-op">+</span> <span class="formula-val">Rent Deposit Refund Delay Cost</span>          <span class="formula-comment">// delay penalty</span>
+  <span class="formula-op">−</span> <span class="formula-val">Flexibility Premium × N</span>                 <span class="formula-comment">// option value of exit rights</span>
+
+<span class="formula-key">Monthly Rent Cost</span> <span class="formula-op">=</span> Total Rent Cost <span class="formula-op">/</span> N
+  </div>
+
+  <h3>The verdict</h3>
+
+  <div class="formula-box">
+<span class="formula-key">Monthly Saving</span>  <span class="formula-op">=</span> Monthly Rent Cost <span class="formula-op">−</span> Monthly Lease Cost
+<span class="formula-key">Score (0–100)</span>   <span class="formula-op">=</span> 50 <span class="formula-op">+</span> 50 × (saving fraction)  <span class="formula-comment">// &gt;50 = lease wins</span>
+<span class="formula-key">Confidence</span>      <span class="formula-op">=</span> |saving fraction| × 100              <span class="formula-comment">// margin of decision</span>
+  </div>
+
+  <h3>Opportunity cost rate</h3>
+  <p>The model uses a <strong>certainty-equivalent real opportunity rate</strong>:</p>
+
+  <div class="formula-box">
+<span class="formula-key">Real Rate</span>  <span class="formula-op">=</span> (1 + nominal/12) <span class="formula-op">/</span> (1 + inflation/12) <span class="formula-op">−</span> 1  <span class="formula-comment">// monthly</span>
+<span class="formula-key">Vol Penalty</span> <span class="formula-op">=</span> 0.5 × σ² <span class="formula-op">/</span> 12  <span class="formula-comment">// Kelly-style certainty-equivalent haircut</span>
+<span class="formula-key">CE Rate</span>     <span class="formula-op">=</span> max(0, Real Rate <span class="formula-op">−</span> Vol Penalty) <span class="formula-op">+</span> Liquidity Premium/12
+  </div>
+
+  <p>If your alternative investment is volatile (e.g. equity mutual funds), you can't count on hitting the quoted return with certainty. The volatility penalty discounts the rate accordingly. A high-volatility portfolio thus makes the locked lease deposit look <em>slightly less costly</em> — because your investable alternative is less reliable.</p>
+
+  <div class="callout warning">
+    <span class="callout-label">Important distinction</span>
+    The model computes <strong>economic cost</strong>, not just cash outflow. Economic cost includes opportunity cost on locked capital — money you don't actually pay out, but lose nonetheless. The dashboard shows both separately: "cash outflows" (EMI + maintenance) and "full economic cost" (including the invisible opportunity cost).
+  </div>
+</div>
+
+<!-- ══════════ S3 ══════════ -->
+<div class="section" id="s3">
+  <div class="section-eyebrow">03 — Quick Start</div>
+  <h2 class="section-title">Getting started in <em>5 steps</em></h2>
+  <p class="section-lead">You can be looking at a result in under two minutes. Here's the fastest path.</p>
+
+  <ol class="steps">
+    <li>
+      <div class="step-content">
+        <strong>Load a preset that matches your situation.</strong> Click one of the four quick-scenario buttons at the top: Metro Apartment, High-Street Retail, Office Space, or Warehouse. This populates all fields with realistic defaults for that property type — a good baseline to modify from.
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <strong>Enter your actual lease deposit amount.</strong> This is the single most important number. It's the total deposit the landlord is asking for — not the property value. Enter it in the <em>Lease Deposit (₹)</em> field.
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <strong>Set the loan amount.</strong> How much of that deposit are you borrowing? Enter it in <em>Loan Against Deposit</em>. If you're self-funding, enter 0. The difference is your own funds locked — watch the orange badge update.
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <strong>Enter the equivalent market rent.</strong> What would you pay monthly if you rented the same property instead? This is the key comparison number for the rent side.
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <strong>Read the gauge and verdict banner.</strong> The circular gauge shows the decision score (0–100). Above 50 = lease wins. The banner gives you the monthly saving and full-term impact. Scroll down for charts and confidence analysis.
+      </div>
+    </li>
+  </ol>
+
+  <div class="callout success">
+    <span class="callout-label">Pro tip</span>
+    Use the <strong>ⓘ buttons</strong> next to each field for detailed guidance on what to enter for your specific property type — residential, retail, office, or warehouse. Each field has 4–6 sections of context-specific help.
+  </div>
+</div>
+
+<!-- ══════════ S4 ══════════ -->
+<div class="section" id="s4">
+  <div class="section-eyebrow">04 — Input Reference</div>
+  <h2 class="section-title">Every input, <em>explained</em></h2>
+  <p class="section-lead">There are three groups of inputs: Lease Components, Rent Components, and Economic Assumptions. All have slider + number input pairs that stay in sync.</p>
+
+  <h3>Lease Components</h3>
+
+  <table class="param-table">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Typical Range</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="param-name">Lease Deposit (₹)</span></td>
+        <td><span class="param-range">₹5L – ₹2Cr</span></td>
+        <td class="param-desc">Total upfront deposit paid to the landlord. <strong>Do not enter the property's market value.</strong> This is only the deposit sum — loan + own funds.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Loan Against Deposit (₹)</span></td>
+        <td><span class="param-range">₹0 – ≤ deposit</span></td>
+        <td class="param-desc">Borrowed portion of the deposit (personal loan, business OD, LAP). Enter 0 if fully self-funded. Own funds = deposit − loan.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Interest Rate (%)</span></td>
+        <td><span class="param-range">7% – 22%</span></td>
+        <td class="param-desc">Annual interest rate on the loan. The model uses a standard reducing-balance EMI formula. Typical ranges: top-up home loan 8.5–9.5%, personal loan 10–14%, business OD 12–18%.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Maintenance (₹/mo)</span></td>
+        <td><span class="param-range">₹0 – ₹50K</span></td>
+        <td class="param-desc">Monthly costs to keep the property operational — society charges, AMC, minor repairs. Exclude utilities. Residential: ₹2K–₹25K; Retail/Office: ₹5K–₹50K+.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Withholding (%)</span></td>
+        <td><span class="param-range">0% – 30%</span></td>
+        <td class="param-desc">Percentage of the deposit the landlord withholds at exit (for repairs, defaults, fit-out restoration). Registered leases with reputed landlords: 0–5%. Informal high-value deposits: up to 15%.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Refund Delay (months)</span></td>
+        <td><span class="param-range">0 – 6</span></td>
+        <td class="param-desc">Months after the lease ends before the deposit is returned. Even a 1-month delay on a large deposit has real opportunity cost. Model charges opportunity cost for this period on the refundable amount.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Rent Components</h3>
+
+  <table class="param-table">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Typical Range</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="param-name">Market Rent (₹/mo)</span></td>
+        <td><span class="param-range">₹5K – ₹5L</span></td>
+        <td class="param-desc">What you would pay monthly if renting the same property. This is the rent side's primary cost driver. Use 2–3 comparable market quotes.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Rent Deposit (₹)</span></td>
+        <td><span class="param-range">₹0 – ₹20L</span></td>
+        <td class="param-desc">Security deposit under a rental agreement. Bengaluru: 5–10 months rent. Mumbai/Delhi: 2–3 months. Model charges opportunity cost on this amount for the full comparison period.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Deposit Refund Delay (months)</span></td>
+        <td><span class="param-range">0 – 6</span></td>
+        <td class="param-desc">Months before the rent deposit is returned. Mirrors the lease-side refund delay parameter.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Rent Growth (%/year)</span></td>
+        <td><span class="param-range">0% – 15%</span></td>
+        <td class="param-desc">Annual rent escalation. Applied as a step function every 12 months. Metro residential: 5–10%. Prime retail/industrial: 6–12%. This is the strongest lever in favour of leasing over long tenures.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Exit Likelihood</span></td>
+        <td><span class="param-range">Low / Possible / Likely</span></td>
+        <td class="param-desc">How likely you are to need to exit early. Sets the flexibility premium (0 / 6% / 16% of market rent per month) that is subtracted from the rent side's total cost, representing the option value of rent's flexibility.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Tenure Settings</h3>
+
+  <table class="param-table">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Typical Range</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="param-name">Lease Tenure (months)</span></td>
+        <td><span class="param-range">6 – 120</span></td>
+        <td class="param-desc">How long you are committed to the property. Sets the comparison horizon. All costs compound over this period. Residential: 11–36 months; Retail/Office: 36–60 months; Warehouse: 36–84 months.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Loan Tenure (months)</span></td>
+        <td><span class="param-range">6 – lease tenure</span></td>
+        <td class="param-desc">Repayment period for the loan. Capped automatically at lease tenure. A shorter loan tenure means EMI-free months at the end — which significantly improves lease economics. E.g. 36-month lease with 24-month loan = 12 EMI-free months.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Economic Assumptions</h3>
+
+  <table class="param-table">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Typical Range</th>
+        <th>What it means</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="param-name">Opportunity Cost Rate (%)</span></td>
+        <td><span class="param-range">7% – 30%</span></td>
+        <td class="param-desc">What your locked capital could earn in its next-best use. FD/PPF: 7–8%. Balanced fund: 10–13%. Equity index: 13–16%. Business capital: 18–30%. Use your actual expected return, not an aspirational number.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Net Lease Risk Premium (%)</span></td>
+        <td><span class="param-range">0.5% – 6%</span></td>
+        <td class="param-desc">Extra cost for risks unique to leasing vs renting — deposit recovery risk, lock-in risk, counterparty risk. Institutional landlord with registered lease: 0.5–1%. Individual lessor, informal arrangement: 2–5%.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Inflation Rate (%)</span></td>
+        <td><span class="param-range">3% – 9%</span></td>
+        <td class="param-desc">Expected annual CPI. Used to convert the nominal opportunity rate to a real rate. Does not escalate rent (that's controlled by Rent Growth). RBI target: 4–5%. Recent urban average: 5.5–7%.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Liquidity Premium (%)</span></td>
+        <td><span class="param-range">0.5% – 4%</span></td>
+        <td class="param-desc">Extra annual return required to compensate for the illiquidity of a years-long deposit lock-up, above a short-term rent deposit. Higher if the deposit is a large fraction of your liquid wealth.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Return Volatility (%)</span></td>
+        <td><span class="param-range">3% – 40%</span></td>
+        <td class="param-desc">How volatile your alternative investment returns are. High volatility → lower certainty-equivalent opportunity rate → leasing looks slightly more attractive. Nifty 50: ~16–18%. FD: 3–5%. Business capital: 25–40%.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout danger">
+    <span class="callout-label">Most common input error</span>
+    Entering the <strong>property's market value</strong> in the Lease Deposit field instead of the actual deposit amount. If a flat is worth ₹80L and the landlord demands ₹20L deposit, enter <strong>₹20L</strong> — not ₹80L. Entering ₹80L overstates all costs by 4× and produces completely wrong results.
+  </div>
+</div>
+
+<!-- ══════════ S5 ══════════ -->
+<div class="section" id="s5">
+  <div class="section-eyebrow">05 — Presets</div>
+  <h2 class="section-title">The four <em>preset scenarios</em></h2>
+  <p class="section-lead">Each preset is calibrated to realistic Indian market conditions for that property type. Load one, adjust to your actuals, and you're ready.</p>
+
+  <div class="preset-grid">
+    <div class="preset-card">
+      <div class="preset-emoji">🏠</div>
+      <div class="preset-name">Metro Apartment</div>
+      <div class="preset-desc">Bengaluru-style 2BHK. High lease deposit relative to rent. 36-month horizon, active individual investor profile.</div>
+      <div class="preset-chips">
+        <span class="chip">₹20L deposit</span>
+        <span class="chip">₹14L loan @ 11%</span>
+        <span class="chip">₹38K/mo rent</span>
+        <span class="chip">8% growth</span>
+        <span class="chip">36 months</span>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="preset-emoji">🏪</div>
+      <div class="preset-name">High-Street Retail</div>
+      <div class="preset-desc">500 sq ft prime shop. 5-year lock-in, high fit-out withholding, profitable business with high opportunity cost.</div>
+      <div class="preset-chips">
+        <span class="chip">₹50L deposit</span>
+        <span class="chip">₹30L loan @ 13%</span>
+        <span class="chip">₹1.2L/mo rent</span>
+        <span class="chip">8% growth</span>
+        <span class="chip">60 months</span>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="preset-emoji">🏢</div>
+      <div class="preset-name">Office Space</div>
+      <div class="preset-desc">2,000 sq ft Grade-B office. 3-year lease vs co-working alternative, growing company with moderate risk tolerance.</div>
+      <div class="preset-chips">
+        <span class="chip">₹30L deposit</span>
+        <span class="chip">₹20L loan @ 12%</span>
+        <span class="chip">₹1.5L/mo rent</span>
+        <span class="chip">6% growth</span>
+        <span class="chip">36 months</span>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="preset-emoji">🏭</div>
+      <div class="preset-name">Warehouse / Industrial</div>
+      <div class="preset-desc">10,000 sq ft logistics warehouse on a NH corridor. Long lease, high rent growth, capital-intensive business.</div>
+      <div class="preset-chips">
+        <span class="chip">₹75L deposit</span>
+        <span class="chip">₹50L loan @ 11.5%</span>
+        <span class="chip">₹2.5L/mo rent</span>
+        <span class="chip">9% growth</span>
+        <span class="chip">60 months</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ S6 ══════════ -->
+<div class="section" id="s6">
+  <div class="section-eyebrow">06 — Outputs</div>
+  <h2 class="section-title">Reading the <em>outputs</em></h2>
+  <p class="section-lead">The dashboard shows results in five layers: a score gauge, a verdict banner, key metrics, detailed charts, and analytical deep-dives. Here's what each means.</p>
+
+  <h3>The score gauge (0–100)</h3>
+  <p>The circular gauge is the headline verdict. It maps the lease advantage fraction to a 0–100 scale anchored at 50.</p>
+
+  <table class="score-table">
+    <tr>
+      <td><span class="score-badge" style="background:rgba(26,188,156,0.15);color:#1abc9c;">85 – 100</span></td>
+      <td class="param-desc"><strong style="color:var(--text)">STRONG LEASE</strong> — The numbers clearly favour leasing. Proceed with confidence unless qualitative factors are strongly against it.</td>
+    </tr>
+    <tr>
+      <td><span class="score-badge" style="background:rgba(46,204,113,0.15);color:#2ecc71;">65 – 84</span></td>
+      <td class="param-desc"><strong style="color:var(--text)">LEASE AHEAD</strong> — Meaningful economic edge. Check qualitative factors (stability, landlord risk) to confirm.</td>
+    </tr>
+    <tr>
+      <td><span class="score-badge" style="background:rgba(241,196,15,0.15);color:#f1c40f;">50 – 64</span></td>
+      <td class="param-desc"><strong style="color:var(--text)">LEASE EDGE</strong> — Marginal advantage. Qualitative factors may tip the decision either way.</td>
+    </tr>
+    <tr>
+      <td><span class="score-badge" style="background:rgba(255,159,67,0.15);color:#ff9f43;">35 – 49</span></td>
+      <td class="param-desc"><strong style="color:var(--text)">RENT EDGE</strong> — Renting has a slight economic edge. Consider whether non-financial factors justify leasing.</td>
+    </tr>
+    <tr>
+      <td><span class="score-badge" style="background:rgba(255,77,77,0.15);color:#ff4d4d;">0 – 34</span></td>
+      <td class="param-desc"><strong style="color:var(--text)">RENT WINS</strong> — Renting is significantly more economical. Strong financial case against leasing.</td>
+    </tr>
+  </table>
+
+  <h3>Key metrics row</h3>
+
+  <table class="param-table">
+    <thead><tr><th>Metric</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="param-name">Monthly EMI</span></td>
+        <td class="param-desc">Your loan repayment per month. This is real cash leaving your account.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Maintenance</span></td>
+        <td class="param-desc">Monthly upkeep cost — also real cash. EMI + Maintenance = your actual monthly outflow under the lease.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Monthly / Annual / Term Gain</span></td>
+        <td class="param-desc">Economic saving (positive = lease wins) on a monthly, annual, and full-term basis. These are economic figures, not cash savings — they include opportunity cost.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Effective Cost / Mo</span></td>
+        <td class="param-desc">The full economic monthly cost of the lease (after amortising all costs including opportunity cost). Compare this to market rent to gauge the economic premium or saving.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Cash Payback Period</span></td>
+        <td class="param-desc">How many months of cash savings (market rent minus EMI and maintenance) it takes to recover your own funds. This is a pure cash metric — excludes opportunity cost.</td>
+      </tr>
+      <tr>
+        <td><span class="param-name">Confidence</span></td>
+        <td class="param-desc">How decisive the margin is, as a percentage. High confidence = the result is robust to moderate input changes. Low confidence = a small shift in assumptions reverses the verdict.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Decision Confidence &amp; Breakeven Thresholds</h3>
+  <p>This card answers: <em>how close is this to a coin flip?</em> It shows three breakeven thresholds — the value of market rent, loan rate, and rent growth at which leasing and renting become exactly equal. If your current inputs are far from all three thresholds, the verdict is stable. If you're close to any one threshold, a small real-world change could flip the decision.</p>
+
+  <h3>Implied Return Threshold (IRT)</h3>
+  <p>The IRT is the internal rate of return (IRR) that the lease arrangement is <em>implicitly</em> generating on your incremental capital versus renting. It answers: "If I put extra capital into this lease deposit instead of renting, what return does that capital earn?" Compare it to your opportunity cost rate — if IRT exceeds your opportunity rate, the lease is working harder than your investment alternative. If not, your capital would do better elsewhere.</p>
+
+  <div class="callout warning">
+    <span class="callout-label">Conflict signal</span>
+    If the monthly cost model favours leasing but the IRT is below your opportunity rate, the tool flags a conflict. This happens when the lease saves you money on a monthly basis but the incremental capital deployed generates a sub-par return. The right choice depends on whether you would actually invest the monthly premium at your stated opportunity rate.
+  </div>
+</div>
+
+<!-- ══════════ S7 ══════════ -->
+<div class="section" id="s7">
+  <div class="section-eyebrow">07 — Charts</div>
+  <h2 class="section-title">Six charts, <em>each answers a different question</em></h2>
+
+  <div class="chart-cards">
+    <div class="chart-card">
+      <div class="chart-card-icon">💾</div>
+      <div class="chart-card-name">Lease Cost Breakdown</div>
+      <div class="chart-card-desc">What are you actually paying for? Separates cash costs (solid bars — EMI interest, maintenance, withholding) from opportunity costs (hatched bars — invisible returns foregone). Most people only count the cash costs; the opportunity costs are often larger.</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-icon">💰</div>
+      <div class="chart-card-name">Monthly Cost Comparison</div>
+      <div class="chart-card-desc">Side-by-side bar showing actual monthly cash outflow (EMI + maintenance) vs. economic lease cost vs. market rent. The gap between your cash outflow and economic cost is the "invisible" opportunity cost you bear each month.</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-icon">📈</div>
+      <div class="chart-card-name">Cumulative Cost Over Time</div>
+      <div class="chart-card-desc">Three lines over the lease term: cash outflows (blue), full economic lease cost (red), cumulative rent (green). Compare blue to green for a cash reality check. Compare red to green for the full economic picture. The crossover point is decisive.</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-icon">📊</div>
+      <div class="chart-card-name">Rent Growth vs Fixed Lease</div>
+      <div class="chart-card-desc">Month-by-month view of escalating rent against the fixed lease economic cost. Green fill = months where leasing is cheaper. Also tracks cumulative net savings on a right-hand axis. Reveals when (and if) the crossover month arrives.</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-icon">🎯</div>
+      <div class="chart-card-name">Sensitivity Analysis</div>
+      <div class="chart-card-desc">Tornado chart showing which inputs move your monthly saving most (±10% change). Click any factor to switch to interactive mode — a line chart showing how savings change across a ±50% range of that variable. Use this to find your decision's Achilles' heel.</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-icon">📊</div>
+      <div class="chart-card-name">Loan Payment Breakdown</div>
+      <div class="chart-card-desc">Stacked bar for each EMI month: principal (green) vs interest (red) portions. Line overlay tracks remaining loan balance declining to zero. Shows when your interest cost is front-loaded and when the loan tail gives you EMI-free months.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ S8 ══════════ -->
+<div class="section" id="s8">
+  <div class="section-eyebrow">08 — Advanced Features</div>
+  <h2 class="section-title">Beyond the basics: <em>advanced tools</em></h2>
+
+  <h3>Scenario Analysis Grid</h3>
+  <p>The 3×3 scenario grid stress-tests the decision across nine combinations of market rent (−15%, base, +15%) and rent growth (−3pp, base, +3pp). Green cells = lease wins in that scenario. Red = rent wins. Use this to understand whether the verdict is robust to market uncertainty — if most cells are green, you have a stable lease advantage. If it's mixed, the decision is sensitive to market direction.</p>
+
+  <h3>Early Exit Analysis</h3>
+  <p>Drag the slider to simulate leaving before the lease term ends. The tool shows your cash paid out, net deposit recovery (deposit refund minus outstanding loan balance — which can be negative in early months if the outstanding loan exceeds the refund), cumulative rent you would have paid instead, and your net position versus renting at that exit month. This is critical for assessing lock-in risk.</p>
+
+  <div class="callout">
+    <span class="callout-label">Key insight</span>
+    In the first few months of a lease, the net position vs. renting is almost always negative — you've paid EMI and maintenance but your deposit isn't generating savings yet. The chart shows when the cumulative lease position turns positive. If that month is well within the lease term, exit risk is manageable.
+  </div>
+
+  <h3>Qualitative Checklist</h3>
+  <p>Six non-financial factors that can override a marginal financial verdict. Check each that applies to your situation. The tool gives a qualitative score and a combined assessment. A 4/6 or higher qualitative score generally reinforces a marginal financial advantage into a confident recommendation. A 0–2/6 qualitative score may justify renting even if the financial numbers marginally favour the lease.</p>
+
+  <h3>URL Sharing</h3>
+  <p>Click <strong>📤 Share</strong> to copy a URL with all your current inputs encoded as parameters. Send it to a colleague or advisor to review the same scenario. The URL includes every slider value — the recipient sees exactly your numbers.</p>
+
+  <h3>Light/Dark Theme</h3>
+  <p>Toggle between dark (default) and light mode using the button in the top right. The preference is saved in your browser's local storage.</p>
+</div>
+
+<!-- ══════════ S9 ══════════ -->
+<div class="section" id="s9">
+  <div class="section-eyebrow">09 — Common Mistakes</div>
+  <h2 class="section-title">Mistakes that <em>break the model</em></h2>
+
+  <ul class="mistake-list">
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Entering property market value as the lease deposit.</strong> If the flat is worth ₹1Cr and the landlord asks ₹20L deposit, enter ₹20L — not ₹1Cr. This is the most common error and overstates lease costs by 3–10×.</span>
+    </li>
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Using an aspirational opportunity rate instead of a realistic one.</strong> "I could earn 25% in the market" is not an opportunity cost unless you would actually invest the money in something generating 25%. Use your actual blended portfolio return. If you keep savings in FDs and liquid funds, 8–9% is more honest than 18%.</span>
+    </li>
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Ignoring rent growth.</strong> Entering 0% for rent growth makes renting look artificially cheap. Metro residential rents have grown 7–15% annually in 2022–2024. Even a conservative 5–6% growth dramatically changes the 5-year comparison.</span>
+    </li>
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Setting flexibility premium at zero when exit risk is real.</strong> If there's a genuine chance you'll need to exit early — business risk, relocation, life change — that option has value. Leaving it at zero overstates the lease's advantage.</span>
+    </li>
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Setting loan tenure longer than the lease tenure.</strong> The tool auto-caps this, but consciously: if your repayment extends beyond when you'll vacate, you'd still owe principal at exit. The early exit simulator shows this as negative net deposit recovery.</span>
+    </li>
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Ignoring the maintenance field.</strong> Monthly society charges, AMC contracts, and minor repair budgets are real costs under the lease that have no equivalent under renting (where the landlord bears structural maintenance). Leaving it at zero understates the lease's true cost.</span>
+    </li>
+    <li>
+      <span class="mistake-icon">❌</span>
+      <span class="mistake-text"><strong>Comparing a lease deposit to co-working without adjusting the rent deposit.</strong> Co-working typically requires zero deposit (or 1 month advance). If renting means co-working, set the rent deposit to near zero and set the flexibility premium to zero (flexibility is already priced into the co-working model).</span>
+    </li>
+  </ul>
+</div>
+
+<!-- ══════════ S10 ══════════ -->
+<div class="section" id="s10">
+  <div class="section-eyebrow">10 — Reference</div>
+  <h2 class="section-title">Keyboard shortcuts <em>&amp;</em> quick reference</h2>
+
+  <h3>Keyboard shortcuts</h3>
+
+  <table class="param-table">
+    <thead><tr><th>Key</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><span class="kbd">?</span> or <span class="kbd">H</span></td><td class="param-desc">Open the help guide</td></tr>
+      <tr><td><span class="kbd">R</span></td><td class="param-desc">Reset all inputs to defaults (Metro Apartment baseline)</td></tr>
+      <tr><td><span class="kbd">Esc</span></td><td class="param-desc">Close the help / info modal</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The collapsible sections</h3>
+  <p>The three input groups — Lease Components, Rent Components, and Economic Assumptions — can each be collapsed by clicking their section header. This is useful on small screens or when you want to focus on one group at a time.</p>
+
+  <h3>Validation banners</h3>
+  <p>The tool shows two types of banners above the inputs: <strong>red error banners</strong> block the calculation (e.g. loan exceeds deposit, tenure too short) and <strong>yellow warning banners</strong> flag unusual values that are allowed but worth reviewing (e.g. opportunity rate above 35%, rent growth above 15%). Resolve red errors before reading results.</p>
+
+  <h3>The direction indicators</h3>
+  <p>The ▲ ▼ ● indicators next to Monthly Gain, Annual Gain, and Term Gain provide colour-blind-safe signals. ▲ = lease is winning. ▼ = rent is winning. ● = too close to call.</p>
+
+  <h3>Benchmark values (India, 2024–25)</h3>
+
+  <table class="param-table">
+    <thead><tr><th>Parameter</th><th>Conservative</th><th>Moderate</th><th>Aggressive</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Opportunity Rate</td>
+        <td class="param-range">7–8%</td>
+        <td class="param-range">10–13%</td>
+        <td class="param-range">16–25%+</td>
+      </tr>
+      <tr>
+        <td class="param-name">Rent Growth (residential)</td>
+        <td class="param-range">4–5%</td>
+        <td class="param-range">6–8%</td>
+        <td class="param-range">10–15%</td>
+      </tr>
+      <tr>
+        <td class="param-name">Inflation</td>
+        <td class="param-range">4–4.5%</td>
+        <td class="param-range">5–6%</td>
+        <td class="param-range">6.5–8%</td>
+      </tr>
+      <tr>
+        <td class="param-name">Risk Premium</td>
+        <td class="param-range">0.5–1%</td>
+        <td class="param-range">1.5–2.5%</td>
+        <td class="param-range">3–6%</td>
+      </tr>
+      <tr>
+        <td class="param-name">Return Volatility</td>
+        <td class="param-range">3–5% (FD)</td>
+        <td class="param-range">12–16% (mutual fund)</td>
+        <td class="param-range">25–40% (business)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<div class="doc-footer">
+  <div class="doc-footer-brand">💰 Aladdin Finance BI</div>
+  <div class="doc-footer-note">Lease vs Rent Decision Engine · India · INR · v1.1</div>
+</div>
+
+</div><!-- .page -->
+</body>
+</html>
