@@ -1893,7 +1893,17 @@ syncInputs.forEach(({ id, label, format }) => {
         }
         calculate();
     }); }
-    input.addEventListener('input', () => { const clean = cleanNumber(input.value); if (range) range.value = clean; updateLabel(); calculate(); });
+    input.addEventListener('input', () => {
+        const clean = cleanNumber(input.value);
+        if (range) range.value = clean;
+        updateLabel();
+        // When market rent changes, re-derive the flexibility premium from the current toggle level
+        if (id === 'marketRent' && typeof currentExitLikelihood !== 'undefined' && currentExitLikelihood !== 'low') {
+            setExitLikelihood(currentExitLikelihood);
+            return; // setExitLikelihood calls calculate()
+        }
+        calculate();
+    });
 });
 
 /* ================= EMI ================= */
@@ -2413,7 +2423,7 @@ function updateImpliedReturnThreshold({
         rateEl.textContent = '> 200';
         rateEl.style.color = 'var(--green)';
         if (unitEl) unitEl.style.display = '';
-        if (sentence) sentence.innerHTML = 'The lease is generating an <strong>exceptional incremental return (> 200% p.a.)</strong> — the net refund vastly outweighs incremental outflows vs renting.';
+        if (sentence) sentence.innerHTML = 'The lease is generating an <strong>exceptional incremental return (> 200% p.a.)</strong> — the net refund vastly outweighs incremental outflows vs renting. Note: when incremental monthly outflows are small or negative (lease costs less than rent each month) and a large deposit is recovered at term-end, IRR mathematics produce extreme values. The monthly saving figure above is the more grounded measure.';
         if (context)  context.textContent = `Net incremental inflow: ${formatINR(target)}.`;
         showNetRate(Infinity);
     } else {
@@ -2428,6 +2438,13 @@ function updateImpliedReturnThreshold({
         let qualifier = '';
         if (vsOpp >= 0) qualifier = `IRT (${pct}%) exceeds your opportunity rate (${oppPct}%) — the lease is generating a better return than your next best alternative.`;
         else            qualifier = `IRT (${pct}%) is below your opportunity rate (${oppPct}%) by ${(Math.abs(vsOpp)*100).toFixed(1)}pp — your capital would work harder invested elsewhere.`;
+
+        // Contextualise mechanically high IRT values — large upfront deposit recovered at term-end
+        // behaves like a zero-coupon bond, which produces high IRR optics regardless of absolute saving.
+        if (annualRate > 0.30) {
+            qualifier += ` Note: IRT values above ~30% are mechanically expected when a large deposit (${formatINR(netOwnFunds > 0 ? netOwnFunds : OWN_FUNDS)}) is deployed upfront and returned at term-end — similar to how a zero-coupon bond produces high IRR optics. The number is real and correct; it just reflects the time-value leverage of lump-sum capital. For intuition, weigh the monthly saving (₹ figure above) alongside the IRT.`;
+        }
+
         if (context) context.textContent = qualifier;
         showNetRate(annualRate);
     }
@@ -2534,10 +2551,15 @@ function calculate() {
         const riskAdjustedLeaseCost = totalLeaseCostWithoutRisk + riskCost;
         const monthlyLeaseCost = riskAdjustedLeaseCost / LEASE_TENURE;
 
+        // Convert nominal rent growth to real (same basis as CE_REAL_OPP_RATE)
+        // Without this, a 6% inflation + 8% rent growth produces 8% nominal escalation
+        // compared against a deflated real opportunity rate — overstating lease advantage.
+        const REAL_RENT_INCREMENT = (1 + RENT_INCREMENT) / (1 + INFLATION_ANNUAL / 100) - 1;
+
         let totalRentPaidOverLeaseTerm = 0;
         for (let m = 1; m <= LEASE_TENURE; m++) {
             const yearIndex = Math.floor((m - 1) / 12);
-            totalRentPaidOverLeaseTerm += MARKET_RENT * Math.pow(1 + RENT_INCREMENT, yearIndex);
+            totalRentPaidOverLeaseTerm += MARKET_RENT * Math.pow(1 + REAL_RENT_INCREMENT, yearIndex);
         }
 
         const rentDepositOppCost = RENT_DEPOSIT * (Math.pow(1 + CE_REAL_OPP_RATE, LEASE_TENURE) - 1);
@@ -2625,7 +2647,7 @@ function calculate() {
         // Implied Return Threshold
         const solvedIRT = updateImpliedReturnThreshold({
             EMI, MAINTENANCE, MARKET_RENT,
-            RENT_INCREMENT,
+            RENT_INCREMENT: REAL_RENT_INCREMENT,
             depositRefundable,
             delayCost,
             OWN_FUNDS,
@@ -2639,19 +2661,18 @@ function calculate() {
             OPP_RATE_ANNUAL
         });
 
-        // Conflict warning: only show when verdict favours lease but IRT < nominal opportunity rate
-        // IRT is nominal — compare against nominal OPP_RATE_ANNUAL, not inflation-adjusted CE_REAL_OPP_RATE
+        // Conflict warning: IRT vs nominal opportunity rate
         const conflictEl = $('irtConflictWarning');
         if (conflictEl) {
             const leaseBetter  = monthlySavings > 0;
-            const oppAnnualDec = OPP_RATE_ANNUAL / 100; // nominal decimal, matches IRR basis
+            const oppAnnualDec = OPP_RATE_ANNUAL / 100;
             if (leaseBetter && solvedIRT !== null && solvedIRT !== Infinity && solvedIRT < oppAnnualDec) {
                 const premiumM1 = EMI + MAINTENANCE - MARKET_RENT;
                 const premiumLabel = premiumM1 >= 0
                     ? `paying ${formatINR(premiumM1)}/mo more than rent`
                     : `saving ${formatINR(Math.abs(premiumM1))}/mo vs rent on cashflow`;
                 conflictEl.style.display = 'block';
-                conflictEl.innerHTML = `⚠️ <strong>Heads up:</strong> The cost model favours leasing (cheaper monthly equivalent), but the IRT (${(solvedIRT * 100).toFixed(1)}%) is below your opportunity rate (${OPP_RATE_ANNUAL.toFixed(1)}%). On a monthly cost basis, lease wins. On a capital returns basis, you are ${premiumLabel} — and that capital could earn more deployed elsewhere. The right choice depends on whether you would actually invest that premium at ${OPP_RATE_ANNUAL.toFixed(1)}%.`;
+                conflictEl.innerHTML = `⚠️ <strong>Heads up:</strong> The cost model favours leasing (cheaper monthly equivalent), but the IRT (${(solvedIRT * 100).toFixed(1)}%) is below your opportunity rate (${OPP_RATE_ANNUAL.toFixed(1)}%). On a monthly cost basis, lease wins. On a capital returns basis, you are ${premiumLabel} — and that capital could earn more deployed elsewhere.`;
             } else {
                 conflictEl.style.display = 'none';
             }
@@ -2660,7 +2681,7 @@ function calculate() {
         // Update confidence card
         updateConfidenceCard({
             confidence, monthlySavings, monthlyLeaseCost, monthlyRentCost,
-            MARKET_RENT, LOAN_RATE_ANNUAL: LOAN_RATE_ANNUAL, RENT_INCREMENT,
+            MARKET_RENT, LOAN_RATE_ANNUAL: LOAN_RATE_ANNUAL, RENT_INCREMENT: REAL_RENT_INCREMENT,
             LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM,
             LOAN_AMOUNT, EFFECTIVE_LOAN_TENURE: effectiveLoanMonths,
             OWN_FUNDS, LOCKED_FUNDS_RATE,
@@ -2669,10 +2690,10 @@ function calculate() {
         });
 
         // Scenario analysis grid
-        updateScenarioGrid({ MARKET_RENT, RENT_INCREMENT, LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM, monthlyLeaseCost });
+        updateScenarioGrid({ MARKET_RENT, RENT_INCREMENT: REAL_RENT_INCREMENT, LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM, monthlyLeaseCost });
 
         // Early exit analysis
-        buildEarlyExitData({ LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths, LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT, OWN_FUNDS, LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE });
+        buildEarlyExitData({ LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths, LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT: REAL_RENT_INCREMENT, OWN_FUNDS, LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE });
 
         // --- CHART DATA ---
         // TCO: separate cash costs vs opportunity costs
@@ -2698,7 +2719,7 @@ function calculate() {
             }
             cLcash += MAINTENANCE;
             cLfull += monthlyLeaseCost;
-            cR += MARKET_RENT * Math.pow(1 + RENT_INCREMENT, Math.floor((m-1)/12));
+            cR += MARKET_RENT * Math.pow(1 + REAL_RENT_INCREMENT, Math.floor((m-1)/12));
             cumulativeLeaseCash.push(cLcash);
             cumulativeLeaseFull.push(cLfull);
             cumulativeRentCosts.push(cR);
@@ -2707,7 +2728,7 @@ function calculate() {
 
         let rentMonthlyRent = [], leaseConstantRent = [], cumulativeSavings = [], rentMonths = [], rentT = 0, leaseT = 0, crossoverMonth = null;
         for (let m = 1; m <= LEASE_TENURE; m++) {
-            const mr = MARKET_RENT * Math.pow(1 + RENT_INCREMENT, Math.floor((m-1)/12));
+            const mr = MARKET_RENT * Math.pow(1 + REAL_RENT_INCREMENT, Math.floor((m-1)/12));
             rentT += mr; leaseT += monthlyLeaseCost;
             rentMonthlyRent.push(mr); leaseConstantRent.push(monthlyLeaseCost);
             cumulativeSavings.push(rentT - leaseT);
@@ -2761,13 +2782,13 @@ function calculate() {
 
         // FIX 2b: Rent Growth — higher growth HELPS leasing; adverse = -10%, favorable = +10%
         {
-            const upGrowth = RENT_INCREMENT * 1.1, downGrowth = RENT_INCREMENT * 0.9;
+            const upGrowth = REAL_RENT_INCREMENT * 1.1, downGrowth = REAL_RENT_INCREMENT * 0.9;
             let upRentTotal = 0, downRentTotal = 0, baseRentTotal = 0;
             for (let m = 1; m <= LEASE_TENURE; m++) {
                 const yr = Math.floor((m-1)/12);
                 upRentTotal += MARKET_RENT * Math.pow(1 + upGrowth, yr);
                 downRentTotal += MARKET_RENT * Math.pow(1 + downGrowth, yr);
-                baseRentTotal += MARKET_RENT * Math.pow(1 + RENT_INCREMENT, yr);
+                baseRentTotal += MARKET_RENT * Math.pow(1 + REAL_RENT_INCREMENT, yr);
             }
             const upMonthlyRent = upRentTotal / LEASE_TENURE;
             const downMonthlyRent = downRentTotal / LEASE_TENURE;
@@ -2958,8 +2979,11 @@ function generateInteractiveSensitivity(factor) {
         }
     } else if (factor === 'Rent Growth') {
         // FIX: recompute totalRent with new growth; deposit costs stay fixed
+        // Use real rent growth (nominal - inflation) as base, consistent with the model
         const baseRent = num('marketRent');
-        const baseGrowth = num('rentIncrement') / 100;
+        const nominalGrowth = num('rentIncrement') / 100;
+        const inflationRate = num('inflationRate') / 100;
+        const baseGrowth = Math.max(0, (1 + nominalGrowth) / (1 + inflationRate) - 1); // real base
         for (let change = -range; change <= range; change += step) {
             const newGrowth = Math.max(0, baseGrowth * (1 + change / 100));
             let newRentTotal = 0;
@@ -3151,11 +3175,19 @@ let currentExitLikelihood = 'low';
 function setExitLikelihood(level) {
     currentExitLikelihood = level;
     const marketRent = num('marketRent') || 38000;
-    const vals = { low: 0, med: Math.round(marketRent * 0.06), high: Math.round(marketRent * 0.16) };
-    const flexi = vals[level];
+    // Principled derivation: 0% / 6% / 16% of current market rent
+    // These fractions represent the option-value of exit flexibility:
+    //   Low (0%)   — committed tenant, lock-in risk is irrelevant
+    //   Med (6%)   — 1-in-17 chance of a disruptive mid-term exit; expected cost ~6% of rent/mo
+    //   High (16%) — near-certain need for flexibility; exit optionality worth ~2 months rent/yr
+    const pcts = { low: 0, med: 0.06, high: 0.16 };
+    const flexi = Math.round(marketRent * (pcts[level] ?? 0));
     $('flexibilityPremium').value = flexi;
     $('flexibilityPremiumRange').value = flexi;
-    $('flexibilityPremiumLabel').textContent = flexi === 0 ? '₹0/mo' : formatINR(flexi) + '/mo';
+    // Show both the derived amount and the basis so users understand it's not guesswork
+    $('flexibilityPremiumLabel').textContent = flexi === 0
+        ? '₹0/mo'
+        : `${formatINR(flexi)}/mo (${Math.round((pcts[level])*100)}% of rent)`;
     ['Low','Med','High'].forEach(l => {
         const btn = $('exitBtn' + l);
         if (btn) btn.className = 'exit-btn' + (l.toLowerCase() === level ? ' active-' + level : '');
@@ -3414,7 +3446,7 @@ const PRESETS = {
         leaseAmount: 2000000, loanAmount: 1400000, loanRate: 11, maintenance: 4000,
         withholding: 5, refundDelay: 2,
         marketRent: 38000, rentDeposit: 228000, depositRefundDelay: 2,
-        rentIncrement: 8, flexibilityPremium: 3000,
+        rentIncrement: 8, exitLikelihood: 'med',
         leaseTenure: 36, loanTenure: 24,
         oppRate: 11, riskPremium: 1.5, inflationRate: 6, liquidityPremium: 2, returnVol: 14
     },
@@ -3424,7 +3456,7 @@ const PRESETS = {
         leaseAmount: 5000000, loanAmount: 3000000, loanRate: 13, maintenance: 12000,
         withholding: 12, refundDelay: 3,
         marketRent: 120000, rentDeposit: 480000, depositRefundDelay: 3,
-        rentIncrement: 8, flexibilityPremium: 2000,
+        rentIncrement: 8, exitLikelihood: 'low',
         leaseTenure: 60, loanTenure: 36,
         oppRate: 22, riskPremium: 2.5, inflationRate: 6, liquidityPremium: 3, returnVol: 30
     },
@@ -3434,7 +3466,7 @@ const PRESETS = {
         leaseAmount: 3000000, loanAmount: 2000000, loanRate: 12, maintenance: 20000,
         withholding: 6, refundDelay: 2,
         marketRent: 150000, rentDeposit: 450000, depositRefundDelay: 1,
-        rentIncrement: 6, flexibilityPremium: 8000,
+        rentIncrement: 6, exitLikelihood: 'med',
         leaseTenure: 36, loanTenure: 24,
         oppRate: 18, riskPremium: 1.5, inflationRate: 6, liquidityPremium: 2.5, returnVol: 22
     },
@@ -3444,7 +3476,7 @@ const PRESETS = {
         leaseAmount: 7500000, loanAmount: 5000000, loanRate: 11.5, maintenance: 35000,
         withholding: 3, refundDelay: 2,
         marketRent: 250000, rentDeposit: 750000, depositRefundDelay: 2,
-        rentIncrement: 9, flexibilityPremium: 0,
+        rentIncrement: 9, exitLikelihood: 'low',
         leaseTenure: 60, loanTenure: 36,
         oppRate: 20, riskPremium: 1.5, inflationRate: 6, liquidityPremium: 2, returnVol: 25
     }
@@ -3454,13 +3486,15 @@ function loadPreset(key) {
     const p = PRESETS[key];
     if (!p) return;
     SHARE_PARAMS.forEach(id => {
+        if (id === 'flexibilityPremium') return; // managed by toggle
         const el = document.getElementById(id);
         const rangeEl = document.getElementById(id + 'Range');
         if (el && p[id] !== undefined) el.value = p[id];
         if (rangeEl && p[id] !== undefined) { rangeEl.value = p[id]; rangeEl.setAttribute('aria-valuenow', p[id]); }
     });
     updateAllLabels();
-    calculate();
+    // Apply exit likelihood toggle AFTER market rent is set so the ₹ amount is correct
+    setExitLikelihood(p.exitLikelihood || 'low');
     const names = { 'metro-apartment': 'Metro Apartment', 'high-street-retail': 'High-Street Retail', 'office-space': 'Office Space', 'warehouse': 'Warehouse / Industrial' };
     const toast = document.getElementById('shareToast');
     toast.textContent = `✅ Loaded: ${names[key]} scenario`;
