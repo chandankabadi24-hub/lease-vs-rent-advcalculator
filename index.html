@@ -922,6 +922,35 @@
         @media (min-width: 700px) {
             .irt-cashflow-row { grid-template-columns: repeat(5, 1fr); }
         }
+        .irt-prepay-section {
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            background: rgba(0,212,255,0.03);
+        }
+        .irt-prepay-header {
+            font-size: 12px; font-weight: 700; color: var(--cyan);
+            text-transform: uppercase; letter-spacing: 0.3px;
+            margin-bottom: 6px;
+        }
+        .irt-prepay-note {
+            font-size: 12px; color: var(--muted); line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        .irt-prepay-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        @media (max-width: 600px) {
+            .irt-prepay-grid { grid-template-columns: 1fr; gap: 14px; }
+        }
+        .irt-prepay-residual {
+            display: none;
+            margin-top: 10px; padding: 8px 12px; border-radius: 8px;
+            font-size: 11.5px; font-weight: 600; line-height: 1.5;
+            background: rgba(255,140,58,0.1); border-left: 3px solid var(--orange); color: var(--orange);
+        }
+        .irt-prepay-residual.show { display: block; }
         .irt-footnotes {
             display: flex; flex-direction: column; gap: 4px;
             margin-top: 10px; padding-top: 10px;
@@ -1201,16 +1230,42 @@
                 <div class="irt-cf-value" id="irtSurplus" style="color:var(--amber);">—</div>
             </div>
             <div class="irt-cf-item">
-                <div class="irt-cf-label">Net Incremental Refund</div>
+                <div class="irt-cf-label">Net Lease Equity at Exit</div>
                 <div class="irt-cf-value" id="irtTarget" style="color:var(--green);">—</div>
             </div>
         </div>
+        <div class="irt-net-rate" id="irtLiquidityWrap" style="display:none;">
+            <span class="irt-net-label" id="irtLiquidityLabel">Upfront liquidity advantage vs renting:</span>
+            <span class="irt-net-value" id="irtLiquidityValue">—</span>
+        </div>
+        <div class="irt-prepay-note" id="irtLiquidityCaption" style="display:none;margin-top:-8px;margin-bottom:12px;">A liquidity/timing comparison only — the rent deposit is excluded from the return calculation below.</div>
+        <div class="irt-prepay-section" id="irtPrepaySection" style="display:none;">
+            <div class="irt-prepay-header">🏦 Loan Outstanding at Lease-End</div>
+            <div class="irt-prepay-note" id="irtPrepayNote">Your loan runs longer than the lease, so a balance is still owed when it ends.</div>
+            <div class="irt-prepay-grid">
+                <div class="field-wrapper">
+                    <div class="field-label-row"><label>Prepay From Refund (₹) <span class="label-value" id="prepayAmountLabel">₹0</span></label><button class="info-btn" aria-label="Help for loan prepayment" onclick="showFieldHelp('prepayAmount')">ℹ</button></div>
+                    <div class="input-group"><input id="prepayAmount" type="text" value="0"><input type="range" id="prepayAmountRange" aria-label="Loan prepayment amount" min="0" max="1000000" step="1000" value="0"></div>
+                </div>
+                <div class="field-wrapper">
+                    <div class="field-label-row"><label>Prepayment Penalty (%) <span class="label-value" id="prepayPenaltyLabel">0%</span></label><button class="info-btn" aria-label="Help for prepayment penalty" onclick="showFieldHelp('prepayPenalty')">ℹ</button></div>
+                    <div class="input-group"><input id="prepayPenalty" type="text" value="0"><input type="range" id="prepayPenaltyRange" aria-label="Prepayment penalty percent" min="0" max="10" step="0.25" value="0"></div>
+                </div>
+            </div>
+            <div class="irt-prepay-residual" id="irtPrepayResidual"></div>
+        </div>
+        <div class="irt-headline" style="margin-bottom:6px;">Implicit Incremental IRR</div>
         <div class="irt-rate-display">
             <span class="irt-rate-value" id="irtRateValue">—</span>
             <span class="irt-rate-unit" id="irtRateUnit">% p.a.</span>
         </div>
+        <div class="irt-net-rate" id="irtAbsReturnWrap" style="display:none;">
+            <span class="irt-net-label">Absolute Return (whole term):</span>
+            <span class="irt-net-value" id="irtAbsReturnValue">—</span>
+            <span class="irt-net-unit">%</span>
+        </div>
         <div class="irt-net-rate" id="irtNetRateWrap" style="display:none;">
-            <span class="irt-net-label" id="irtNetRateLabel">Net implicit rate (IRT − WACC):</span>
+            <span class="irt-net-label" id="irtNetRateLabel">Net implicit rate (Implicit IRR − WACC):</span>
             <span class="irt-net-value" id="irtNetRateValue">—</span>
             <span class="irt-net-unit">% p.a.</span>
         </div>
@@ -1224,9 +1279,11 @@
                     <span>ℹ︎ Methodology notes</span>
                 </summary>
                 <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
-                    <span>⚠ IRR is computed on incremental cashflows vs renting — rent deposit is netted out at t=0 and t=N since it is common to both options.</span>
-                    <span>⚠ IRR assumes monthly premiums are reinvested at the same rate — actual returns may differ if your reinvestment rate diverges from the IRT.</span>
+                    <span>⚠ The rent deposit is excluded entirely from the Implicit IRR and Absolute Return calculations — it is a comparative-liquidity item, not part of the lease investment. It appears only in the Upfront Liquidity comparison above, discounted there for its own Deposit Refund Delay.</span>
+                    <span>⚠ Implicit IRR assumes monthly premiums are reinvested at the same rate — actual returns may differ if your reinvestment rate diverges from this figure.</span>
                     <span>⚠ Withholding is applied uniformly to the full deposit. In practice, landlords may apply sliding-scale deductions over tenure.</span>
+                    <span>⚠ Implicit Incremental IRR treats each month as exactly 1/12 of a year (a fixed 365/12-day month) rather than anchoring to real calendar dates — this gets the compounding convention right (true annual compounding, not a simple x12) without needing a lease start date input; it doesn't correct for calendar day-count noise (leap years, month length), which is a much smaller effect.</span>
+                    <span>⚠ Absolute Return is the simple, undiscounted total gain over the whole lease term (Net Lease Equity at Exit minus total incremental cash invested, ÷ total incremental cash invested) — it has no ceiling and stays meaningful even in edge cases where the Implicit IRR is pinned at its solver ceiling.</span>
                 </div>
             </details>
         </div>
@@ -1515,7 +1572,8 @@ const SHARE_PARAMS = [
     'leaseAmount','loanAmount','loanRate','loanTenure','leaseTenure',
     'maintenance','withholding','refundDelay',
     'marketRent','rentDeposit','depositRefundDelay','rentIncrement','flexibilityPremium',
-    'oppRate','riskPremium','inflationRate','liquidityPremium','returnVol'
+    'oppRate','riskPremium','inflationRate','liquidityPremium','returnVol',
+    'prepayAmount','prepayPenalty'
 ];
 
 function shareScenario() {
@@ -1539,6 +1597,7 @@ function loadFromURL() {
             if (rangeEl) rangeEl.value = params.get(id);
         }
     });
+    if (params.has('prepayAmount')) prepayUserTouched = true;
 }
 
 /* ================= THEME ================= */
@@ -1795,6 +1854,24 @@ const fieldHelp = {
             { title: 'Office / workspace', text: 'For companies, the alternative deployment (hiring, product, sales) has high volatility especially at early stages. Use 20–35% for startups, 10–20% for established companies with predictable EBITDA. Large corporates with stable cash flows: 8–12%.' },
             { title: 'Quick reference', example: 'FD / PPF / liquid fund: 3–5% | Debt / short-duration fund: 5–8% | Balanced / hybrid fund: 10–14% | Nifty 50 index fund: 15–18% | Mid/small cap equity: 22–30% | Business returns: 25–40%' }
         ]
+    },
+    prepayAmount: {
+        title: 'Loan Prepayment at Lease-End',
+        subtitle: 'How much of the still-outstanding loan balance you settle from your deposit refund when the lease ends, instead of carrying it forward.',
+        sections: [
+            { title: 'Why this appears', text: 'This only shows up when your Loan Tenure runs longer than your Lease Tenure — meaning the loan is not fully paid off by the time the lease ends. The model needs to know what happens to that leftover balance: settle it from your deposit refund (which lowers your net incremental refund but clears the debt), or leave some or all of it outstanding and keep servicing it afterwards. It defaults to full payoff, so nothing changes unless you move the slider.' },
+            { title: 'How it affects the numbers', text: 'The Implied Return Threshold treats your deposit refund minus whatever you prepay (plus any penalty on that amount) as the terminal inflow for the IRR calculation. Prepaying less keeps more refund cash in hand today, but leaves a real, disclosed liability that this tool does not track any further — see the residual-balance note below the slider.' },
+            { title: 'Choosing a number', text: 'Full prepayment (the default) is the simplest and most conservative choice — no lingering liability. Prepaying less can make sense if that cash has a better use elsewhere, or if the loan carries no meaningful prepayment penalty and you would rather keep servicing it on its original schedule.' }
+        ]
+    },
+    prepayPenalty: {
+        title: 'Prepayment / Foreclosure Penalty',
+        subtitle: 'The fee your lender charges on the amount you prepay — applied only to whatever you actually choose to prepay above, not the full outstanding balance.',
+        sections: [
+            { title: 'What it is', text: 'Charged as a percentage of the prepaid principal, and deducted from your refund alongside the prepayment itself.' },
+            { title: 'Typical Indian benchmarks', example: 'Floating-rate loans to individuals: RBI rules mean most banks charge 0% foreclosure fee. Fixed-rate loans, business loans, and NBFC lending commonly charge 2–5%. Check your specific loan agreement — this varies widely by lender and loan type.' },
+            { title: 'If you are not prepaying', text: 'This has no effect when Prepay From Refund is set to ₹0 — the penalty only applies to the amount you actually prepay.' }
+        ]
     }
 };
 
@@ -1864,7 +1941,9 @@ const syncInputs = [
     { id: 'riskPremium', label: 'riskPremiumLabel', format: 'percent' },
     { id: 'inflationRate', label: 'inflationRateLabel', format: 'percent' },
     { id: 'liquidityPremium', label: 'liquidityPremiumLabel', format: 'percent' },
-    { id: 'returnVol', label: 'returnVolLabel', format: 'percent' }
+    { id: 'returnVol', label: 'returnVolLabel', format: 'percent' },
+    { id: 'prepayAmount', label: 'prepayAmountLabel', format: 'inr' },
+    { id: 'prepayPenalty', label: 'prepayPenaltyLabel', format: 'percent' }
 ];
 
 syncInputs.forEach(({ id, label, format }) => {
@@ -1882,15 +1961,7 @@ syncInputs.forEach(({ id, label, format }) => {
 
     if (range) { range.addEventListener('input', () => {
         input.value = range.value; updateLabel();
-        // Live cap: if leaseTenure changes, clamp loanTenure
-        if (id === 'leaseTenure') {
-            const lt = cleanNumber(input.value);
-            const loanT = $('loanTenure'), loanR = $('loanTenureRange');
-            if (loanT && cleanNumber(loanT.value) > lt) {
-                loanT.value = lt; if (loanR) { loanR.value = lt; loanR.setAttribute('aria-valuenow', lt); }
-                const lbl = $('loanTenureLabel'); if (lbl) lbl.innerText = lt;
-            }
-        }
+        if (id === 'prepayAmount') prepayUserTouched = true;
         calculate();
     }); }
     input.addEventListener('input', () => {
@@ -1902,6 +1973,7 @@ syncInputs.forEach(({ id, label, format }) => {
             setExitLikelihood(currentExitLikelihood);
             return; // setExitLikelihood calls calculate()
         }
+        if (id === 'prepayAmount') prepayUserTouched = true;
         calculate();
     });
 });
@@ -2237,8 +2309,6 @@ function validateInputs(vals) {
     // Hard errors — block calculation
     if (LOAN_AMOUNT > LEASE_AMOUNT)
         errors.push(`Loan (${formatINR(LOAN_AMOUNT)}) exceeds the total deposit (${formatINR(LEASE_AMOUNT)}). You cannot borrow more than the deposit you are paying.`);
-    if (LOAN_TENURE > LEASE_TENURE)
-        errors.push(`Loan tenure (${LOAN_TENURE} mo) is longer than lease tenure (${LEASE_TENURE} mo). Loan has been capped to lease tenure automatically.`);
     if (LEASE_TENURE < 6)
         errors.push('Lease tenure must be at least 6 months for a meaningful comparison.');
     if (MARKET_RENT <= 0)
@@ -2282,7 +2352,11 @@ function renderValidation(errors, warnings) {
  *   t=0  : -OWN_FUNDS                         (lump sum deployed into deposit)
  *   t=m  : -(EMI_m + MAINTENANCE - rent_m)     (monthly lease premium over renting)
  *          Note: premium_m can be negative in EMI-free tail months — handled naturally
- *   t=N  : +(depositRefundable - delayCost)    (terminal inflow at lease end)
+ *   t=N  : +(depositRefundable - delayCost - prepaymentAmount - prepaymentPenaltyAmount)
+ *          (terminal inflow — deposit refund settles whatever you choose to prepay of any loan
+ *          balance still outstanding at exit, e.g. when the loan's own tenure runs longer than
+ *          the lease, plus the lender's penalty on that amount; any balance you choose not to
+ *          prepay is disclosed separately and isn't part of this cash flow)
  *
  * IRR is rm such that NPV of all cashflows = 0:
  *   -OWN_FUNDS
@@ -2310,15 +2384,15 @@ function solveLeaseIRT(ownFunds, premiumStream, target) {
     const npvAtZero = -ownFunds - premiumStream.reduce((s, v) => s + v, 0) + target;
 
     // If NPV at 0 is still negative, IRR is negative — lease doesn't break even
-    if (npvAtZero <= 0) return null;
+    if (npvAtZero <= 0) return { monthlyRate: null, nominalAnnual: null, effectiveAnnual: null };
 
-    // Upper ceiling: 200% p.a. = ~16.67% monthly
+    // Upper ceiling: 200% p.a. nominal = ~16.67% monthly
     const HIGH = 2.0 / 12;
     const npvAtHigh = npv(HIGH);
 
     // NPV should be negative at HIGH (standard IRR: NPV decreasing in r)
     // If still positive at HIGH, IRR > 200% p.a.
-    if (npvAtHigh > 0) return Infinity;
+    if (npvAtHigh > 0) return { monthlyRate: Infinity, nominalAnnual: Infinity, effectiveAnnual: Infinity };
 
     // Bisection: find rm where NPV crosses zero
     let lo = 0, hi = HIGH;
@@ -2328,23 +2402,84 @@ function solveLeaseIRT(ownFunds, premiumStream, target) {
         else hi = mid;
         if (hi - lo < 1e-10) break;
     }
-    return (lo + hi) / 2 * 12; // annualise
+    const rm = (lo + hi) / 2;
+    // Two ways to annualise the same monthly rate:
+    //   nominalAnnual  = rm x 12               — simple/APR-style (this is what "IRT" has always shown)
+    //   effectiveAnnual = (1+rm)^12 - 1         — true compounded rate, i.e. XIRR treating each
+    //                     period as exactly 1/12 of a year (a fixed 365/12-day "month", per the
+    //                     agreed approach — no separate date input, same cash-flow structure as IRR)
+    return { monthlyRate: rm, nominalAnnual: rm * 12, effectiveAnnual: Math.pow(1 + rm, 12) - 1 };
+}
+
+/**
+ * Shows/hides the loan-prepayment sub-section (only relevant when the loan outlives the
+ * lease), defaults the prepay amount to full payoff until the user edits it, clamps any
+ * stored value down if the outstanding balance has since shrunk below it, and discloses
+ * whatever residual balance is left uncovered. Returns the two figures the IRT card's
+ * terminal cash flow needs.
+ */
+function updateLoanPrepaySection(outstandingLoanAtExit) {
+    const section = $('irtPrepaySection');
+    if (!section) return { prepaymentAmount: 0, prepaymentPenaltyAmount: 0 };
+
+    if (!outstandingLoanAtExit || outstandingLoanAtExit <= 1) {
+        section.style.display = 'none';
+        prepayUserTouched = false; // start fresh (full payoff) if this becomes relevant again later
+        return { prepaymentAmount: 0, prepaymentPenaltyAmount: 0 };
+    }
+
+    section.style.display = '';
+    const rounded = Math.round(outstandingLoanAtExit);
+    const inputEl = $('prepayAmount'), rangeEl = $('prepayAmountRange'), lbl = $('prepayAmountLabel');
+    if (rangeEl) { rangeEl.max = rounded; rangeEl.setAttribute('aria-valuemax', rounded); }
+
+    let prepaymentAmount = num('prepayAmount');
+    if (!prepayUserTouched || prepaymentAmount > outstandingLoanAtExit) {
+        // Not yet customised, or a previous customisation no longer fits (balance shrank) — default to full payoff
+        prepaymentAmount = outstandingLoanAtExit;
+        if (inputEl) inputEl.value = rounded;
+        if (rangeEl) rangeEl.value = rounded;
+    }
+    prepaymentAmount = Math.max(0, prepaymentAmount);
+    if (lbl) lbl.textContent = formatINR(prepaymentAmount);
+
+    const prepaymentPenaltyAmount = prepaymentAmount * (num('prepayPenalty') / 100);
+
+    const residualLoan = Math.max(0, outstandingLoanAtExit - prepaymentAmount);
+    const residualEl = $('irtPrepayResidual');
+    if (residualEl) {
+        if (residualLoan > 1) {
+            residualEl.classList.add('show');
+            residualEl.textContent = `⚠ ${formatINR(residualLoan)} will still be owed on the loan after the lease ends — not reflected in the Net Lease Equity or Implicit IRR above.`;
+        } else {
+            residualEl.classList.remove('show');
+            residualEl.textContent = '';
+        }
+    }
+    const noteEl = $('irtPrepayNote');
+    if (noteEl) noteEl.textContent = `Your loan outlives this lease — ${formatINR(rounded)} is still owed when the lease ends. Choose how much to settle from the deposit refund now.`;
+
+    return { prepaymentAmount, prepaymentPenaltyAmount };
 }
 
 function updateImpliedReturnThreshold({
     EMI, MAINTENANCE, MARKET_RENT, RENT_INCREMENT,
-    depositRefundable, delayCost, OWN_FUNDS, RENT_DEPOSIT,
+    depositRefundable, delayCost, prepaymentAmount, prepaymentPenaltyAmount, OWN_FUNDS, RENT_DEPOSIT,
     LEASE_TENURE, effectiveLoanMonths, LOAN_RATE_ANNUAL,
     LOAN_AMOUNT, LEASE_AMOUNT, CE_REAL_OPP_RATE, OPP_RATE_ANNUAL
 }) {
     const el = id => document.getElementById(id);
 
-    // Incremental analysis — rent deposit is common to both options, so net it out:
-    // t=0 incremental outflow = OWN_FUNDS - RENT_DEPOSIT (what lease demands over renting)
-    // t=N incremental inflow  = (depositRefundable - delayCost) - RENT_DEPOSIT
-    // If OWN_FUNDS < RENT_DEPOSIT, renting actually requires more upfront capital — t=0 is negative (inflow)
-    const netOwnFunds = OWN_FUNDS - RENT_DEPOSIT;
-    const target      = Math.max(0, depositRefundable - delayCost) - RENT_DEPOSIT;
+    // The rent deposit is a comparative-liquidity item, not part of the lease investment — it is
+    // deliberately EXCLUDED from every return calculation below (t=0, terminal value, Absolute
+    // Return, Implicit Incremental IRR). It's shown separately, below, purely as an upfront
+    // liquidity comparison between the two options.
+    // t=0 incremental outflow = OWN_FUNDS (actual own funds committed to the lease — nothing else)
+    // Net Lease Equity at Exit = deposit refund, net of withholding, refund-delay opportunity
+    // cost, and whatever loan balance you choose to prepay (plus the lender's penalty on that) —
+    // again, no rent deposit involved.
+    const netOwnFunds = OWN_FUNDS;
+    const target      = Math.max(0, depositRefundable - delayCost - (prepaymentAmount || 0) - (prepaymentPenaltyAmount || 0));
 
     // Month-by-month premium stream: what extra you pay vs renting each month
     // Negative premium months (EMI-free tail, or rent > outflow) are valid — included as-is
@@ -2360,37 +2495,89 @@ function updateImpliedReturnThreshold({
     const m1Premium = EMI + MAINTENANCE - MARKET_RENT;
     const ownFundsEl = el('irtOwnFunds');
     if (ownFundsEl) {
-        ownFundsEl.textContent = formatINRSigned(netOwnFunds) + (netOwnFunds < 0 ? ' (rent needs more upfront)' : '');
-        ownFundsEl.style.color = netOwnFunds >= 0 ? 'var(--red)' : 'var(--green)'; // negative = renting costs more = favours lease
+        ownFundsEl.textContent = formatINR(netOwnFunds);
+        ownFundsEl.style.color = 'var(--red)'; // capital committed to the lease
     }
     if (el('irtLeaseOutflow')) el('irtLeaseOutflow').textContent = formatINR(EMI + MAINTENANCE);
     if (el('irtRent'))         el('irtRent').textContent         = formatINR(MARKET_RENT);
     if (el('irtSurplus'))      el('irtSurplus').textContent      = formatINR(m1Premium);
     if (el('irtTarget'))       el('irtTarget').textContent       = formatINR(target);
 
-    // Helper: update net implicit rate display using WACC as cost of capital
-    // Both IRR and WACC are on a nominal basis — use OPP_RATE_ANNUAL (user-entered nominal rate)
-    // WACC = (OWN_FUNDS / LEASE_AMOUNT) × nominal_opp_rate + (LOAN_AMOUNT / LEASE_AMOUNT) × loan_rate
-    function showNetRate(annualRate) {
+    // Upfront liquidity comparison — purely informational, excluded from every return figure
+    // below. Positive = leasing needs less upfront cash than renting would; negative = leasing
+    // needs more. This is the ONLY place the rent deposit enters this card.
+    const upfrontLiquidityDelta = RENT_DEPOSIT - netOwnFunds;
+    const liqWrap = el('irtLiquidityWrap'), liqVal = el('irtLiquidityValue'),
+          liqLabel = el('irtLiquidityLabel'), liqCaption = el('irtLiquidityCaption');
+    if (liqWrap && liqVal) {
+        if (RENT_DEPOSIT > 0 || netOwnFunds > 0) {
+            liqWrap.style.display = 'flex';
+            if (liqCaption) liqCaption.style.display = 'block';
+            if (upfrontLiquidityDelta >= 0) {
+                if (liqLabel) liqLabel.textContent = 'Upfront liquidity advantage vs renting:';
+                liqVal.textContent = formatINR(upfrontLiquidityDelta);
+                liqVal.style.color = 'var(--green)';
+            } else {
+                if (liqLabel) liqLabel.textContent = 'Upfront liquidity disadvantage vs renting:';
+                liqVal.textContent = formatINR(Math.abs(upfrontLiquidityDelta));
+                liqVal.style.color = 'var(--amber)';
+            }
+        } else {
+            liqWrap.style.display = 'none';
+            if (liqCaption) liqCaption.style.display = 'none';
+        }
+    }
+
+    // Absolute Return — total % gain over the whole lease term, on the cash actually invested.
+    // Total Incremental Cash Invested = own funds committed at t=0 + every month the lease costs
+    // more than renting would. Months where renting would have been cheaper are not netted in as
+    // "returned capital" here (mirrors how a SIP's absolute return is quoted against amount
+    // invested, not net of interim benefits).
+    // Absolute Profit = Net Lease Equity at Exit − Total Incremental Cash Invested.
+    // This is plain arithmetic — no discount-rate solving — so unlike the IRR below it never
+    // hits a solver ceiling and stays informative in every edge case.
+    const totalIncrementalCashInvested = netOwnFunds + premiumStream.reduce((s, v) => s + Math.max(0, v), 0);
+    const absoluteProfit = target - totalIncrementalCashInvested;
+    const absoluteReturnPct = totalIncrementalCashInvested > 1 ? (absoluteProfit / totalIncrementalCashInvested) * 100 : null;
+
+    function showAbsoluteReturn() {
+        const wrap = el('irtAbsReturnWrap');
+        const valEl = el('irtAbsReturnValue');
+        if (!wrap || !valEl) return;
+        if (absoluteReturnPct === null) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'flex';
+        const pct = absoluteReturnPct.toFixed(1);
+        valEl.textContent = (absoluteReturnPct >= 0 ? '+' : '') + pct;
+        valEl.style.color = absoluteReturnPct >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Helper: update net implicit rate display using WACC as cost of capital, both on an
+    // effective-annual basis (matching the Implicit IRR headline). WACC blends the two NOMINAL
+    // funding rates first (that's the real periodic cost of capital), then compounds the blended
+    // monthly rate once — converting each component to "effective" separately and averaging
+    // afterwards would double up the compounding in a way that doesn't correspond to any real
+    // cash flow.
+    function showNetRate(effectiveRate) {
         const wrap = el('irtNetRateWrap');
         const valEl = el('irtNetRateValue');
         if (!wrap || !valEl) return;
-        if (annualRate === null || annualRate === Infinity || annualRate === undefined) {
+        if (effectiveRate === null || effectiveRate === Infinity || effectiveRate === undefined) {
             wrap.style.display = 'none'; return;
         }
         const loanRateDec   = LOAN_RATE_ANNUAL / 100;
         const nominalOppDec = OPP_RATE_ANNUAL  / 100;
-        const wacc = LEASE_AMOUNT > 0
+        const waccNominal = LEASE_AMOUNT > 0
             ? (OWN_FUNDS / LEASE_AMOUNT) * nominalOppDec
             + (LOAN_AMOUNT / LEASE_AMOUNT) * loanRateDec
             : loanRateDec;
-        const netRate = annualRate - wacc;
+        const wacc = Math.pow(1 + waccNominal / 12, 12) - 1; // effective annual, consistent with the Implicit IRR headline
+        const netRate = effectiveRate - wacc;
         const netPct  = (netRate * 100).toFixed(1);
         valEl.textContent = (netRate >= 0 ? '+' : '') + netPct;
         valEl.style.color = netRate >= 0 ? 'var(--green)' : 'var(--red)';
         wrap.style.display = 'flex';
         const labelEl = el('irtNetRateLabel');
-        if (labelEl) labelEl.textContent = `Net implicit rate (IRT − WACC of ${(wacc * 100).toFixed(1)}%):`;
+        if (labelEl) labelEl.textContent = `Net implicit rate (Implicit IRR − WACC of ${(wacc * 100).toFixed(1)}%):`;
         return { wacc, netRate };
     }
 
@@ -2400,55 +2587,65 @@ function updateImpliedReturnThreshold({
     const context  = el('irtContext');
     if (!rateEl) return;
 
-    // Target can be zero/negative if rent deposit >= net refund (renting locks more capital)
+    // Both anchors non-positive — no capital committed at t=0 and nothing meaningful recovered
+    // at exit (e.g. loan not fully prepaid and withholding/outstanding balance wipe out the
+    // refund) — an annualised rate isn't meaningful here.
     if (target <= 0 && netOwnFunds <= 0) {
         rateEl.textContent = 'N/A';
         rateEl.style.color = 'var(--muted)';
         if (unitEl)   unitEl.style.display = 'none';
-        if (sentence) sentence.innerHTML = 'Renting requires equal or more upfront capital than leasing on an incremental basis — <strong>IRT is not meaningful here.</strong>';
-        if (context)  context.textContent = `Net incremental own funds: ${formatINR(netOwnFunds)}. Net incremental refund: ${formatINR(target)}.`;
+        if (sentence) sentence.innerHTML = 'No meaningful own capital is committed to or recovered from this lease on an incremental basis — <strong>the Implicit Incremental IRR is not meaningful here.</strong>';
+        if (context)  context.textContent = `Own funds at t=0: ${formatINR(netOwnFunds)}. Net lease equity at exit: ${formatINR(target)}.`;
+        showAbsoluteReturn();
         return null;
     }
 
-    const annualRate = solveLeaseIRT(netOwnFunds, premiumStream, target);
+    const solved = solveLeaseIRT(netOwnFunds, premiumStream, target);
+    const effectiveAnnual = solved.effectiveAnnual;
 
-    if (annualRate === null) {
+    if (effectiveAnnual === null) {
         rateEl.textContent = '< 0';
         rateEl.style.color = 'var(--red)';
         if (unitEl) unitEl.style.display = '';
-        if (sentence) sentence.innerHTML = 'The net incremental refund does not cover total incremental outflows even at 0% — <strong>the lease generates a negative implicit return on an incremental basis.</strong>';
-        if (context)  context.textContent = `Net incremental outflows: ${formatINR(netOwnFunds + premiumStream.reduce((s,v) => s+v, 0))}. Net incremental inflow: ${formatINR(target)}.`;
+        if (sentence) sentence.innerHTML = 'The net lease equity at exit does not cover total incremental outflows even at 0% — <strong>the lease generates a negative implicit return on an incremental basis.</strong>';
+        if (context)  context.textContent = `Net incremental outflows: ${formatINR(netOwnFunds + premiumStream.reduce((s,v) => s+v, 0))}. Net lease equity at exit: ${formatINR(target)}.`;
         showNetRate(null);
-    } else if (annualRate === Infinity) {
-        rateEl.textContent = '> 200';
+        showAbsoluteReturn();
+    } else if (effectiveAnnual === Infinity) {
+        const ceilingEffective = Math.pow(1 + 2.0 / 12, 12) - 1; // mirrors solveLeaseIRT's own HIGH ceiling
+        rateEl.textContent = '> ' + (ceilingEffective * 100).toFixed(0);
         rateEl.style.color = 'var(--green)';
         if (unitEl) unitEl.style.display = '';
-        if (sentence) sentence.innerHTML = 'The lease is generating an <strong>exceptional incremental return (> 200% p.a.)</strong> — the net refund vastly outweighs incremental outflows vs renting. Note: when incremental monthly outflows are small or negative (lease costs less than rent each month) and a large deposit is recovered at term-end, IRR mathematics produce extreme values. The monthly saving figure above is the more grounded measure.';
-        if (context)  context.textContent = `Net incremental inflow: ${formatINR(target)}.`;
+        if (sentence) sentence.innerHTML = `The lease is generating an <strong>exceptional incremental return (> ${(ceilingEffective*100).toFixed(0)}% p.a.)</strong> — the net lease equity at exit vastly outweighs incremental outflows vs renting. Note: when incremental monthly outflows are small or negative (lease costs less than rent each month) and own funds committed are small relative to the equity recovered, this compounds into extreme headline rates. The Absolute Return and monthly saving figures are the more grounded measures.`;
+        if (context)  context.textContent = `Net lease equity at exit: ${formatINR(target)}.`;
         showNetRate(Infinity);
+        showAbsoluteReturn();
     } else {
-        const pct     = (annualRate * 100).toFixed(1);
-        const oppPct  = OPP_RATE_ANNUAL.toFixed(1);
-        const color   = annualRate < 0.08 ? 'var(--red)' : annualRate < 0.15 ? 'var(--amber)' : 'var(--green)';
+        const pct     = (effectiveAnnual * 100).toFixed(1);
+        const oppEffective = Math.pow(1 + OPP_RATE_ANNUAL / 100 / 12, 12) - 1; // same basis as the headline
+        const oppPct  = (oppEffective * 100).toFixed(1);
+        const color   = effectiveAnnual < 0.08 ? 'var(--red)' : effectiveAnnual < 0.15 ? 'var(--amber)' : 'var(--green)';
         rateEl.textContent = pct;
         rateEl.style.color = color;
         if (unitEl) unitEl.style.display = '';
         if (sentence) sentence.innerHTML = `This lease arrangement is implicitly generating <strong>${pct}% p.a.</strong> on incremental capital deployed over the rent alternative.`;
-        const vsOpp = annualRate - OPP_RATE_ANNUAL / 100;
+        const vsOpp = effectiveAnnual - oppEffective;
         let qualifier = '';
-        if (vsOpp >= 0) qualifier = `IRT (${pct}%) exceeds your opportunity rate (${oppPct}%) — the lease is generating a better return than your next best alternative.`;
-        else            qualifier = `IRT (${pct}%) is below your opportunity rate (${oppPct}%) by ${(Math.abs(vsOpp)*100).toFixed(1)}pp — your capital would work harder invested elsewhere.`;
+        if (vsOpp >= 0) qualifier = `Implicit IRR (${pct}%) exceeds your opportunity rate (${oppPct}% effective) — the lease is generating a better return than your next best alternative.`;
+        else            qualifier = `Implicit IRR (${pct}%) is below your opportunity rate (${oppPct}% effective) by ${(Math.abs(vsOpp)*100).toFixed(1)}pp — your capital would work harder invested elsewhere.`;
 
-        // Contextualise mechanically high IRT values — large upfront deposit recovered at term-end
-        // behaves like a zero-coupon bond, which produces high IRR optics regardless of absolute saving.
-        if (annualRate > 0.30) {
-            qualifier += ` Note: IRT values above ~30% are mechanically expected when a large deposit (${formatINR(netOwnFunds > 0 ? netOwnFunds : OWN_FUNDS)}) is deployed upfront and returned at term-end — similar to how a zero-coupon bond produces high IRR optics. The number is real and correct; it just reflects the time-value leverage of lump-sum capital. For intuition, weigh the monthly saving (₹ figure above) alongside the IRT.`;
+        // Contextualise mechanically high values — a large deposit recovered at term-end against
+        // small own funds committed behaves like a zero-coupon bond, which produces high IRR
+        // optics regardless of absolute saving.
+        if (effectiveAnnual > 0.30) {
+            qualifier += ` Note: values above ~30% are mechanically expected when own funds committed (${formatINR(netOwnFunds)}) are small relative to the lease equity recovered at term-end — similar to how a zero-coupon bond produces high IRR optics. The number is real and correct; it just reflects the time-value leverage of lump-sum capital. For intuition, weigh the Absolute Return and monthly saving (₹ figure above) alongside the Implicit IRR.`;
         }
 
         if (context) context.textContent = qualifier;
-        showNetRate(annualRate);
+        showNetRate(effectiveAnnual);
+        showAbsoluteReturn();
     }
-    return annualRate;
+    return effectiveAnnual;
 }
 
 /* ================= MAIN CALCULATION ================= */
@@ -2490,15 +2687,10 @@ function calculate() {
             return;
         }
 
-        // ── LOAN TENURE CAP (enforce silently + warn) ──────────────────────────
+        // Loan tenure is no longer forced to match lease tenure — a loan can legitimately
+        // outlive the lease, leaving an outstanding balance at exit (handled below).
+        // EFFECTIVE_LOAN_TENURE = months the loan is actually being serviced within the lease.
         const EFFECTIVE_LOAN_TENURE = Math.min(LOAN_TENURE, LEASE_TENURE);
-        if (LOAN_TENURE > LEASE_TENURE) {
-            const loanTenureInput = $('loanTenure');
-            const loanTenureRange = $('loanTenureRange');
-            if (loanTenureInput) loanTenureInput.value = LEASE_TENURE;
-            if (loanTenureRange) { loanTenureRange.value = LEASE_TENURE; loanTenureRange.setAttribute('aria-valuenow', LEASE_TENURE); }
-            const lbl = $('loanTenureLabel'); if (lbl) lbl.innerText = LEASE_TENURE;
-        }
 
         // ── VALIDATION ─────────────────────────────────────────────────────────
         const validationVals = { LEASE_AMOUNT, LOAN_AMOUNT, LOAN_TENURE, LEASE_TENURE,
@@ -2526,8 +2718,22 @@ function calculate() {
         const WITHHOLDING_CLAMPED = Math.min(1, Math.max(0, WITHHOLDING));
         const effectiveLoanMonths = EFFECTIVE_LOAN_TENURE;
 
-        const EMI = emi(LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths);
-        const totalInterestPaid = (EMI * effectiveLoanMonths) - LOAN_AMOUNT;
+        // EMI reflects the loan's own (possibly longer) tenure — not truncated to the lease.
+        const EMI = emi(LOAN_AMOUNT, LOAN_RATE_MONTHLY, LOAN_TENURE);
+
+        // Amortize only over the months the loan is actually serviced within the lease.
+        // If LOAN_TENURE > LEASE_TENURE, this loop stops at exit with a genuine outstanding
+        // balance still owed — that balance gets settled out of the deposit refund.
+        let loanBalanceRunning = LOAN_AMOUNT;
+        let totalInterestPaid = 0;
+        for (let m = 1; m <= effectiveLoanMonths; m++) {
+            const interestPortion = loanBalanceRunning * LOAN_RATE_MONTHLY;
+            let principalPortion = EMI - interestPortion;
+            if (principalPortion > loanBalanceRunning) principalPortion = loanBalanceRunning; // final-payment rounding guard
+            loanBalanceRunning = Math.max(0, loanBalanceRunning - principalPortion);
+            totalInterestPaid += interestPortion;
+        }
+        const outstandingLoanAtExit = loanBalanceRunning;
 
         const withholdingLoss = LEASE_AMOUNT * WITHHOLDING_CLAMPED;
         const depositRefundable = LEASE_AMOUNT * (1 - WITHHOLDING_CLAMPED);
@@ -2644,12 +2850,17 @@ function calculate() {
 
         updateVerdictBanner(monthlySavings, termSavings, score, LEASE_TENURE, confidence);
 
+        // Loan prepayment at lease-end (only relevant when the loan outlives the lease)
+        const { prepaymentAmount, prepaymentPenaltyAmount } = updateLoanPrepaySection(outstandingLoanAtExit);
+
         // Implied Return Threshold
         const solvedIRT = updateImpliedReturnThreshold({
             EMI, MAINTENANCE, MARKET_RENT,
             RENT_INCREMENT: REAL_RENT_INCREMENT,
             depositRefundable,
             delayCost,
+            prepaymentAmount,
+            prepaymentPenaltyAmount,
             OWN_FUNDS,
             RENT_DEPOSIT,
             LEASE_TENURE,
@@ -2661,18 +2872,18 @@ function calculate() {
             OPP_RATE_ANNUAL
         });
 
-        // Conflict warning: IRT vs nominal opportunity rate
+        // Conflict warning: CAGR vs opportunity rate (both on an effective-annual basis)
         const conflictEl = $('irtConflictWarning');
         if (conflictEl) {
             const leaseBetter  = monthlySavings > 0;
-            const oppAnnualDec = OPP_RATE_ANNUAL / 100;
-            if (leaseBetter && solvedIRT !== null && solvedIRT !== Infinity && solvedIRT < oppAnnualDec) {
+            const oppEffectiveDec = Math.pow(1 + OPP_RATE_ANNUAL / 100 / 12, 12) - 1;
+            if (leaseBetter && solvedIRT !== null && solvedIRT !== Infinity && solvedIRT < oppEffectiveDec) {
                 const premiumM1 = EMI + MAINTENANCE - MARKET_RENT;
                 const premiumLabel = premiumM1 >= 0
                     ? `paying ${formatINR(premiumM1)}/mo more than rent`
                     : `saving ${formatINR(Math.abs(premiumM1))}/mo vs rent on cashflow`;
                 conflictEl.style.display = 'block';
-                conflictEl.innerHTML = `⚠️ <strong>Heads up:</strong> The cost model favours leasing (cheaper monthly equivalent), but the IRT (${(solvedIRT * 100).toFixed(1)}%) is below your opportunity rate (${OPP_RATE_ANNUAL.toFixed(1)}%). On a monthly cost basis, lease wins. On a capital returns basis, you are ${premiumLabel} — and that capital could earn more deployed elsewhere.`;
+                conflictEl.innerHTML = `⚠️ <strong>Heads up:</strong> The cost model favours leasing (cheaper monthly equivalent), but the Implicit IRR (${(solvedIRT * 100).toFixed(1)}%) is below your opportunity rate (${(oppEffectiveDec * 100).toFixed(1)}% effective). On a monthly cost basis, lease wins. On a capital returns basis, you are ${premiumLabel} — and that capital could earn more deployed elsewhere.`;
             } else {
                 conflictEl.style.display = 'none';
             }
@@ -2693,7 +2904,7 @@ function calculate() {
         updateScenarioGrid({ MARKET_RENT, RENT_INCREMENT: REAL_RENT_INCREMENT, LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM, monthlyLeaseCost });
 
         // Early exit analysis
-        buildEarlyExitData({ LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths, LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT: REAL_RENT_INCREMENT, OWN_FUNDS, LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE });
+        buildEarlyExitData({ LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths, LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT: REAL_RENT_INCREMENT, OWN_FUNDS, LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE, RISK_PREMIUM, REFUND_DELAY, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM });
 
         // --- CHART DATA ---
         // TCO: separate cash costs vs opportunity costs
@@ -2743,18 +2954,25 @@ function calculate() {
         // Interest Rate (higher rate = higher lease cost = less savings)
         {
             const upRate = LOAN_RATE_MONTHLY * 1.1, downRate = LOAN_RATE_MONTHLY * 0.9;
-            const upEMI = emi(LOAN_AMOUNT, upRate, effectiveLoanMonths);
-            const downEMI = emi(LOAN_AMOUNT, downRate, effectiveLoanMonths);
+            const upEMI = emi(LOAN_AMOUNT, upRate, LOAN_TENURE);
+            const downEMI = emi(LOAN_AMOUNT, downRate, LOAN_TENURE);
             const upSavings = monthlyRentCost - (monthlyLeaseCost + (upEMI - EMI));
             const downSavings = monthlyRentCost - (monthlyLeaseCost - (EMI - downEMI));
             impactFactors.push({ name: 'Interest Rate', negative: baseMonthlySavings - upSavings, positive: downSavings - baseMonthlySavings });
         }
 
         // FIX 2a: Market Rent — higher rent HELPS leasing; adverse = -10%, favorable = +10%
+        // Recompute the full monthlyRentCost (compounding escalation, rent-deposit opp cost,
+        // flexibility discount) rather than treating a single month's rent as a stand-in for it —
+        // the shortcut diverged badly (and could flip sign) for long tenures, large rent deposits,
+        // or high flexibility premiums. Rent Growth's bar below already does this properly;
+        // Market Rent's didn't.
         {
             const upRent = MARKET_RENT * 1.1, downRent = MARKET_RENT * 0.9;
-            const upSavings = upRent - monthlyLeaseCost;
-            const downSavings = downRent - monthlyLeaseCost;
+            const upMonthlyRentCost = computeMonthlyRentCostFor(upRent, LEASE_TENURE, REAL_RENT_INCREMENT, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM);
+            const downMonthlyRentCost = computeMonthlyRentCostFor(downRent, LEASE_TENURE, REAL_RENT_INCREMENT, RENT_DEPOSIT, CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM);
+            const upSavings = upMonthlyRentCost - monthlyLeaseCost;
+            const downSavings = downMonthlyRentCost - monthlyLeaseCost;
             impactFactors.push({
                 name: 'Market Rent',
                 negative: baseMonthlySavings - downSavings,  // FIX: lower rent = less savings
@@ -2773,16 +2991,21 @@ function calculate() {
         // Loan Amount (higher = higher EMI = less savings)
         {
             const upLoan = LOAN_AMOUNT * 1.1, downLoan = LOAN_AMOUNT * 0.9;
-            const upEMI = emi(upLoan, LOAN_RATE_MONTHLY, effectiveLoanMonths);
-            const downEMI = emi(downLoan, LOAN_RATE_MONTHLY, effectiveLoanMonths);
+            const upEMI = emi(upLoan, LOAN_RATE_MONTHLY, LOAN_TENURE);
+            const downEMI = emi(downLoan, LOAN_RATE_MONTHLY, LOAN_TENURE);
             const upSavings = monthlyRentCost - (monthlyLeaseCost + (upEMI - EMI));
             const downSavings = monthlyRentCost - (monthlyLeaseCost - (EMI - downEMI));
             impactFactors.push({ name: 'Loan Amount', negative: baseMonthlySavings - upSavings, positive: downSavings - baseMonthlySavings });
         }
 
         // FIX 2b: Rent Growth — higher growth HELPS leasing; adverse = -10%, favorable = +10%
+        // (multiplicative x1.1/x0.9 breaks when REAL_RENT_INCREMENT is negative — routine here,
+        // since it's nominal growth net of inflation — because scaling a negative number toward
+        // zero looks like an "increase". Perturb additively instead, sized off the magnitude of
+        // the base rate with a floor so a near-zero base still gets a real up/down spread.)
         {
-            const upGrowth = REAL_RENT_INCREMENT * 1.1, downGrowth = REAL_RENT_INCREMENT * 0.9;
+            const growthMagnitude = Math.max(Math.abs(REAL_RENT_INCREMENT), 0.01);
+            const upGrowth = REAL_RENT_INCREMENT + growthMagnitude * 0.1, downGrowth = REAL_RENT_INCREMENT - growthMagnitude * 0.1;
             let upRentTotal = 0, downRentTotal = 0, baseRentTotal = 0;
             for (let m = 1; m <= LEASE_TENURE; m++) {
                 const yr = Math.floor((m-1)/12);
@@ -2979,13 +3202,19 @@ function generateInteractiveSensitivity(factor) {
         }
     } else if (factor === 'Rent Growth') {
         // FIX: recompute totalRent with new growth; deposit costs stay fixed
-        // Use real rent growth (nominal - inflation) as base, consistent with the model
+        // Use real rent growth (nominal - inflation) as base, consistent with the model.
+        // No floor on baseGrowth (it's routinely negative — nominal growth net of inflation —
+        // and computeMonthlyRentCostFor-style compounding handles that fine); previously
+        // clamping it to 0 flatlined this entire chart whenever real growth was negative.
+        // Perturb additively (sign-safe) instead of multiplicatively for the same reason the
+        // Overview tornado's Rent Growth bar was fixed.
         const baseRent = num('marketRent');
         const nominalGrowth = num('rentIncrement') / 100;
         const inflationRate = num('inflationRate') / 100;
-        const baseGrowth = Math.max(0, (1 + nominalGrowth) / (1 + inflationRate) - 1); // real base
+        const baseGrowth = (1 + nominalGrowth) / (1 + inflationRate) - 1; // real base
+        const growthMagnitude = Math.max(Math.abs(baseGrowth), 0.01);
         for (let change = -range; change <= range; change += step) {
-            const newGrowth = Math.max(0, baseGrowth * (1 + change / 100));
+            const newGrowth = baseGrowth + growthMagnitude * (change / 100);
             let newRentTotal = 0;
             for (let m = 1; m <= LEASE_TENURE; m++) {
                 newRentTotal += baseRent * Math.pow(1 + newGrowth, Math.floor((m-1)/12));
@@ -3167,6 +3396,10 @@ function updateConfidenceCard(params) {
 }
 
 /* ================= INIT ================= */
+// Must be declared before the first calculate() call below — calculate() reads this
+// synchronously (via updateLoanPrepaySection), unlike currentExitLikelihood further down,
+// which is only read inside a deferred event listener.
+let prepayUserTouched = false;
 loadFromURL();
 calculate();
 
@@ -3253,10 +3486,17 @@ function updateEarlyExit(month) {
 function buildEarlyExitData(params) {
     const { LEASE_TENURE, EMI, MAINTENANCE, LOAN_AMOUNT, LOAN_RATE_MONTHLY, effectiveLoanMonths,
             LEASE_AMOUNT, WITHHOLDING_CLAMPED, MARKET_RENT, RENT_INCREMENT, OWN_FUNDS,
-            LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE } = params;
+            LOCKED_FUNDS_RATE, RENT_DEPOSIT, CE_REAL_OPP_RATE,
+            RISK_PREMIUM, REFUND_DELAY, DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM } = params;
 
     const depositBack = LEASE_AMOUNT * (1 - WITHHOLDING_CLAMPED);
     earlyExitData = [];
+
+    // One-time costs that apply the same way regardless of which month you exit — whenever you
+    // leave, you still wait REFUND_DELAY/DEPOSIT_REFUND_DELAY months for each side's refund.
+    // These mirror the Decision Lens's delayCost / rentDepositDelayOppCost exactly.
+    const leaseRefundDelayCost = REFUND_DELAY > 0 ? depositBack * (Math.pow(1 + LOCKED_FUNDS_RATE, REFUND_DELAY) - 1) : 0;
+    const rentRefundDelayCost = DEPOSIT_REFUND_DELAY > 0 ? RENT_DEPOSIT * (Math.pow(1 + CE_REAL_OPP_RATE, DEPOSIT_REFUND_DELAY) - 1) : 0;
 
     let cumulEMI = 0, cumulMaint = 0, cumulRent = 0;
     let balance = LOAN_AMOUNT;
@@ -3289,17 +3529,25 @@ function buildEarlyExitData(params) {
             : 0;
         const totalOppCost = phase1OppCost + phase2OppCost;
 
+        // Net Lease Risk Premium — accrues proportionally to how long capital has been locked,
+        // same annualised basis as the Decision Lens's riskCost (LEASE_AMOUNT * RISK_PREMIUM * yrs)
+        const riskCostAccrued = LEASE_AMOUNT * RISK_PREMIUM * (m / 12);
+
         // Total lease cost at exit month m:
-        // OWN_FUNDS (upfront) + cumulative EMI + cumulative maintenance + opp cost on locked capital
+        // OWN_FUNDS (upfront) + cumulative EMI + cumulative maintenance + opp cost on locked
+        // capital + accrued risk premium + refund-delay opp cost
         // Less: what you recover = depositBack - outstanding loan balance
         const leaseNetRecovery = depositBack - balance;
-        const leaseTotalCost   = OWN_FUNDS + cumulEMI + cumulMaint + totalOppCost - leaseNetRecovery;
+        const leaseTotalCost   = OWN_FUNDS + cumulEMI + cumulMaint + totalOppCost + riskCostAccrued + leaseRefundDelayCost - leaseNetRecovery;
 
         // ── RENT SIDE ────────────────────────────────────────────────────
-        // Cumulative rent paid + opportunity cost on rent deposit locked for m months
-        // Less: rent deposit recovered at exit (assumed full recovery for rent)
+        // Cumulative rent paid + opportunity cost on rent deposit locked for m months +
+        // rent-deposit refund-delay opp cost, less flexibility value accrued so far (capped so
+        // it can't discount rent below zero — mirrors the Decision Lens's own floor).
         const rentDepositOppCost = RENT_DEPOSIT * (Math.pow(1 + CE_REAL_OPP_RATE, m) - 1);
-        const rentTotalCost      = cumulRent + rentDepositOppCost;
+        const rentTotalCostBeforeFlex = cumulRent + rentDepositOppCost + rentRefundDelayCost;
+        const flexDiscountAccrued = Math.min(FLEXIBILITY_PREMIUM * m, rentTotalCostBeforeFlex);
+        const rentTotalCost = Math.max(0, rentTotalCostBeforeFlex - flexDiscountAccrued);
         // Rent deposit recovered at exit — net rent cost
         // (rent deposit itself is returned so it's a wash on capital, only opp cost is the true cost)
 
@@ -3369,7 +3617,12 @@ function updateScenarioGrid(params) {
     const { MARKET_RENT, RENT_INCREMENT, LEASE_TENURE, RENT_DEPOSIT, CE_REAL_OPP_RATE,
             DEPOSIT_REFUND_DELAY, FLEXIBILITY_PREMIUM, monthlyLeaseCost } = params;
     const rentVars   = [MARKET_RENT * 0.85, MARKET_RENT, MARKET_RENT * 1.15];
-    const growthVars = [Math.max(0, RENT_INCREMENT - 0.03), RENT_INCREMENT, RENT_INCREMENT + 0.03];
+    // No floor here: REAL_RENT_INCREMENT (nominal growth net of inflation) is routinely
+    // negative or small, and computeMonthlyRentCostFor() handles negative growth rates fine.
+    // Clamping only the low end previously could make "Growth -3pp" show as *higher* growth
+    // than "Base" whenever RENT_INCREMENT - 3pp dipped below 0 while RENT_INCREMENT itself
+    // didn't — breaking the row ordering.
+    const growthVars = [RENT_INCREMENT - 0.03, RENT_INCREMENT, RENT_INCREMENT + 0.03];
     const colLabels  = ['Rent -15%', 'Base', 'Rent +15%'];
     const rowLabels  = ['Growth -3pp', 'Base', 'Growth +3pp'];
     const grid = $('scenarioGrid');
@@ -3420,7 +3673,7 @@ const DEFAULTS = {
     withholding: 0, refundDelay: 0,
     marketRent: 38000, rentDeposit: 0, depositRefundDelay: 0, rentIncrement: 5, flexibilityPremium: 0,
     leaseTenure: 36, loanTenure: 24, oppRate: 11, riskPremium: 1.5,
-    inflationRate: 6, liquidityPremium: 2, returnVol: 14
+    inflationRate: 6, liquidityPremium: 2, returnVol: 14, prepayPenalty: 0
 };
 
 function resetDefaults() {
@@ -3430,6 +3683,7 @@ function resetDefaults() {
         if (el && DEFAULTS[id] !== undefined) { el.value = DEFAULTS[id]; }
         if (rangeEl && DEFAULTS[id] !== undefined) { rangeEl.value = DEFAULTS[id]; rangeEl.setAttribute('aria-valuenow', DEFAULTS[id]); }
     });
+    prepayUserTouched = false; // back to full-payoff default, like a fresh load
     updateAllLabels();
     calculate();
     const toast = document.getElementById('shareToast');
@@ -3492,6 +3746,7 @@ function loadPreset(key) {
         if (el && p[id] !== undefined) el.value = p[id];
         if (rangeEl && p[id] !== undefined) { rangeEl.value = p[id]; rangeEl.setAttribute('aria-valuenow', p[id]); }
     });
+    prepayUserTouched = false; // presets don't specify a prepayment choice — start at full-payoff default
     updateAllLabels();
     // Apply exit likelihood toggle AFTER market rent is set so the ₹ amount is correct
     setExitLikelihood(p.exitLikelihood || 'low');
